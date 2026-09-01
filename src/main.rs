@@ -1,3 +1,34 @@
-fn main() {
-    println!("Hello, world!");
+use std::{env, fs};
+
+use crate::lexer::Lexer;
+
+mod diagnostics;
+mod lexer;
+
+fn main() -> Result<(), std::io::Error> {
+    let args: Vec<String> = env::args().collect();
+    let mut filename: Option<&String> = None;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            _ => {
+                filename = Some(&args[i]);
+                i += 1;
+            }
+        }
+    }
+
+    let filename = match filename {
+        Some(f) => f,
+        None => {
+            eprintln!("No source input was specified");
+            std::process::exit(1)
+        }
+    };
+    let source = fs::read_to_string(filename)?;
+    let mut lexer = Lexer::new(&source);
+    let tokens = lexer.tokenize();
+    println!("TOKENS : {:?}", tokens);
+    Ok(())
 }
