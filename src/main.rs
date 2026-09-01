@@ -1,6 +1,6 @@
-use std::{env, fs};
+use std::{cell::RefCell, env, fs, rc::Rc};
 
-use crate::lexer::Lexer;
+use crate::{diagnostics::Diagnostics, lexer::Lexer};
 
 mod diagnostics;
 mod lexer;
@@ -27,8 +27,20 @@ fn main() -> Result<(), std::io::Error> {
         }
     };
     let source = fs::read_to_string(filename)?;
-    let mut lexer = Lexer::new(&source);
+
+    //Diagnostics
+    let diagnostics = Rc::new(RefCell::new(Diagnostics::new(
+        filename.clone(),
+        source.clone(),
+    )));
+
+    //Lexer
+    let mut lexer = Lexer::new(&source, Rc::clone(&diagnostics));
     let tokens = lexer.tokenize();
+    if lexer.corrupted {
+        diagnostics.borrow().dump();
+        std::process::exit(1);
+    }
     println!("TOKENS : {:?}", tokens);
     Ok(())
 }

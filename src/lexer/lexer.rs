@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    diagnostics::Span,
+    diagnostics::{self, CompilerError, Diag, Span},
     lexer::token::{TType, Token},
 };
 
@@ -9,15 +9,19 @@ pub struct Lexer<'a> {
     pos: usize,
     keywords: HashMap<String, TType>,
     src: &'a str,
+    diagnostics: Diag,
+    pub corrupted: bool,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(src: &'a str) -> Self {
+    pub fn new(src: &'a str, diagnostics: Diag) -> Self {
         let keywords = Self::load_keywords();
         Lexer {
             pos: 0,
             keywords,
             src,
+            diagnostics,
+            corrupted: false,
         }
     }
 
@@ -107,11 +111,11 @@ impl<'a> Lexer<'a> {
                         }
 
                         if !closed {
-                            let _span = Span {
+                            let span = Span {
                                 start: self.pos,
                                 end: self.pos + 1,
                             };
-                            //self.report("Unterminated multi-line comment".to_string(), Some(span));
+                            self.report("Unterminated multi-line comment".to_string(), Some(span));
                         }
                     } else {
                         // Single-line comment
@@ -213,6 +217,10 @@ impl<'a> Lexer<'a> {
 
         if !has_digit {
             let span = Span { start, end };
+            self.report(
+                "Invalid hex number: expected hex digit after '0x'".to_string(),
+                Some(span.clone()),
+            );
             return Token::new(TType::Illegal, lexeme, span);
         }
 
@@ -240,9 +248,12 @@ impl<'a> Lexer<'a> {
         let lexeme = self.src[start..end].replace('_', "");
 
         if !has_digit {
-            let _span = Span { start, end };
-            panic!("Invalid binary number: expected binary digit after '0b'",);
-            //return Token::new(TType::Illegal, lexeme, span);
+            let span = Span { start, end };
+            self.report(
+                "Invalid binary number: expected binary digit after '0b'".to_string(),
+                Some(span.clone()),
+            );
+            return Token::new(TType::Illegal, lexeme, span);
         }
 
         self.parse_suffix(lexeme, Span { start, end })
@@ -455,7 +466,15 @@ impl<'a> Lexer<'a> {
                 }
             }
             None => Token::new(TType::End, "".to_string(), Span::new(start, self.pos)),
-            _ => panic!("Invalid char"),
+            Some(ch) => {
+                let span = Span {
+                    start,
+                    end: self.pos + 1,
+                };
+                self.report(format!("Invalid character: '{}'", ch), Some(span.clone()));
+                self.advance();
+                Token::new(TType::Illegal, ch.to_string(), span)
+            }
         }
     }
 
@@ -470,5 +489,12 @@ impl<'a> Lexer<'a> {
             }
         }
         tokens
+    }
+
+    pub fn report(&mut self, message: String, span: Option<Span>) {
+        self.corrupted = true;
+        self.diagnostics
+            .borrow_mut()
+            .report(CompilerError::error(message, span, None));
     }
 }
