@@ -28,6 +28,7 @@ pub enum TType {
     Lte,         //<=
     FatArrow,    //=>
     DoubleColon, //::
+    Range,       //..
 
     ///Primitive expression tokens
     True, //true
@@ -35,6 +36,8 @@ pub enum TType {
     Identifier,   //a
     I8Literal,    //7i8
     U8Literal,    //7u8
+    I16Literal,   //7i16
+    U16Literal,   //7u16
     I32Literal,   //7i32
     U32Literal,   //7u32
     I64Literal,   //7i64
@@ -48,6 +51,7 @@ pub enum TType {
     Let,
     Mut,
     Func,
+    Enum,
     Union,
     Record,
     Alias,

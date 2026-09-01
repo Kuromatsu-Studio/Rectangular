@@ -26,6 +26,7 @@ impl<'a> Lexer<'a> {
             ("let".to_string(), TType::Let),
             ("mut".to_string(), TType::Mut),
             ("func".to_string(), TType::Func),
+            ("enum".to_string(), TType::Enum),
             ("union".to_string(), TType::Union),
             ("record".to_string(), TType::Record),
             ("alias".to_string(), TType::Alias),
@@ -76,8 +77,52 @@ impl<'a> Lexer<'a> {
         while let Some(ch) = self.current_char() {
             if ch.is_whitespace() {
                 self.advance();
+            } else if ch == '#' {
+                self.skip_comment();
             } else {
                 break;
+            }
+        }
+    }
+
+    fn skip_comment(&mut self) {
+        if let Some(ch) = self.current_char() {
+            if ch == '#' {
+                self.advance(); // Consume the initial #
+
+                if let Some(nch) = self.current_char() {
+                    if nch == '#' {
+                        // Multi-line comment
+                        self.advance(); // Consume the second #
+                        let mut closed = false;
+
+                        while let Some(c) = self.current_char() {
+                            if c == '#' && self.peek_char() == Some('#') {
+                                self.advance();
+                                self.advance();
+                                closed = true;
+                                break;
+                            }
+                            self.advance();
+                        }
+
+                        if !closed {
+                            let _span = Span {
+                                start: self.pos,
+                                end: self.pos + 1,
+                            };
+                            //self.report("Unterminated multi-line comment".to_string(), Some(span));
+                        }
+                    } else {
+                        // Single-line comment
+                        while let Some(c) = self.current_char() {
+                            if c == '\n' {
+                                break;
+                            }
+                            self.advance();
+                        }
+                    }
+                }
             }
         }
     }
@@ -219,8 +264,8 @@ impl<'a> Lexer<'a> {
         let token_type = match suffix.as_str() {
             "i64" => TType::I64Literal,
             "u64" => TType::U64Literal,
-            "i16" => TType::I64Literal,
-            "u16" => TType::U64Literal,
+            "i16" => TType::I16Literal,
+            "u16" => TType::U16Literal,
             "i32" => TType::I32Literal,
             "u32" => TType::U32Literal,
             "i8" => TType::I8Literal,
@@ -289,7 +334,12 @@ impl<'a> Lexer<'a> {
             }
             Some('.') => {
                 self.advance();
-                Token::new(TType::Dot, ".".to_string(), Span::new(start, self.pos))
+                if let Some('.') = self.current_char() {
+                    self.advance();
+                    Token::new(TType::Range, "..".to_string(), Span::new(start, self.pos))
+                } else {
+                    Token::new(TType::Dot, ".".to_string(), Span::new(start, self.pos))
+                }
             }
             Some('|') => {
                 self.advance();
@@ -379,9 +429,9 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 if let Some('=') = self.current_char() {
                     self.advance();
-                    Token::new(TType::Lte, ">=".to_string(), Span::new(start, self.pos))
+                    Token::new(TType::Lte, "<=".to_string(), Span::new(start, self.pos))
                 } else {
-                    Token::new(TType::Lt, ">".to_string(), Span::new(start, self.pos))
+                    Token::new(TType::Lt, "<".to_string(), Span::new(start, self.pos))
                 }
             }
             Some('=') => {
