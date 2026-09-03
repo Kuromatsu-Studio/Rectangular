@@ -94,8 +94,8 @@ pub enum TType {
 #[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TType,
-    lexeme: String,
-    span: Span,
+    pub lexeme: String,
+    pub span: Span,
 }
 
 impl Token {

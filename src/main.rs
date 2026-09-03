@@ -2,8 +2,10 @@ use std::{cell::RefCell, env, fs, rc::Rc};
 
 use crate::{diagnostics::Diagnostics, lexer::Lexer};
 
+mod ast;
 mod diagnostics;
 mod lexer;
+mod parser;
 
 fn main() -> Result<(), std::io::Error> {
     let args: Vec<String> = env::args().collect();
