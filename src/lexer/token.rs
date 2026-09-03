@@ -68,6 +68,8 @@ pub enum TType {
     Import,
     From,
     Return,
+    Extern,
+    Ffi,
 
     ///Type keywords
     I8Key,
