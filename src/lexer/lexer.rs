@@ -61,6 +61,8 @@ impl<'a> Lexer<'a> {
             ("f64".to_string(), TType::F64Key),
             ("str".to_string(), TType::StrKey),
             ("bool".to_string(), TType::BoolKey),
+            ("extern".to_string(), TType::Extern),
+            ("ffi".to_string(), TType::Ffi),
         ]);
         keywords
     }
