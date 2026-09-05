@@ -1,4 +1,5 @@
 use crate::{
+    ast::Stmt,
     diagnostics::{CompilerError, Diag, Span},
     lexer::{TType, Token},
 };
@@ -7,7 +8,7 @@ pub struct Parser {
     tokens: Vec<Token>,
     current_pos: usize,
     diagnostics: Diag,
-    corrupted: bool,
+    pub corrupted: bool,
 }
 
 impl Parser {
@@ -18,6 +19,23 @@ impl Parser {
             diagnostics,
             corrupted: false,
         }
+    }
+
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut stmts = Vec::new();
+        while self.current_pos < self.tokens.len() {
+            if let Some(token) = self.current_token().clone() {
+                if token.token_type == TType::End {
+                    break;
+                }
+                if let Some(stmt) = self.parse_stmt() {
+                    stmts.push(stmt);
+                } else {
+                    break;
+                }
+            }
+        }
+        stmts
     }
 
     pub fn advance(&mut self) {

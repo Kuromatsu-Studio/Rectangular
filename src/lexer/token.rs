@@ -29,6 +29,7 @@ pub enum TType {
     FatArrow,    //=>
     DoubleColon, //::
     Range,       //..
+    Semicolon,   //;
 
     ///Primitive expression tokens
     True, //true

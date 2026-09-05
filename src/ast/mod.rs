@@ -1,4 +1,8 @@
 mod ast;
-mod operators;
+mod expr;
+mod stmt;
+mod types;
 
-pub use ast::{Expr, ExprKind, ExprLiteral};
+pub use ast::{BinaryOp, Precedence};
+pub use expr::{Expr, ExprKind, ExprLiteral};
+pub use stmt::{Stmt, StmtKind};

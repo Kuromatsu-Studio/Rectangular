@@ -1,37 +1,112 @@
-use crate::{ast::operators::BinaryOp, diagnostics::Span};
+use crate::lexer::TType;
 
-///The kind of expression u are dealing with
-pub enum ExprKind {
-    Literal(ExprLiteral),
-    Binary(Box<Expr>, BinaryOp, Box<Expr>),
-    Block(Vec<Expr>),
-    While { cond: Box<Expr>, body: Box<Expr> },
-    Return(Box<Expr>),
+///This is represents binary operators
+#[derive(Debug)]
+pub enum BinaryOp {
+    Add,       //+
+    Minus,     //-
+    Gt,        //>
+    Gte,       //>=
+    Lt,        //<
+    Lte,       //<=
+    Neq,       //`!=`
+    Eq,        //==
+    Assign,    //=
+    AddAssign, //+=
+    SubAssign, //=-
+    Invalid,
 }
 
-///These represent the literals like a raw number
-pub enum ExprLiteral {
-    I8(i8),
-    U8(u8),
-    I16(i16),
-    U16(u16),
-    I32(i32),
-    U32(u32),
-    I64(i64),
-    U64(u64),
-    F32(f32),
-    F64(f64),
-    Bool(bool),
+impl BinaryOp {
+    pub fn new(ttype: &TType) -> Self {
+        match ttype {
+            TType::Plus => BinaryOp::Add,
+            TType::Minus => BinaryOp::Minus,
+            _ => BinaryOp::Invalid,
+        }
+    }
 }
 
-///The overall expression structure
-pub struct Expr {
-    kind: ExprKind,
-    span: Span,
+impl BinaryOp {
+    pub fn is_valid(ttype: &TType) -> bool {
+        match ttype {
+            TType::Plus | TType::Minus => true,
+            _ => false,
+        }
+    }
 }
 
-impl Expr {
-    pub fn new(kind: ExprKind, span: Span) -> Self {
-        Expr { kind, span }
+///This represents prefix operators
+pub enum UnaryOp {
+    Neg, //-
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum Precedence {
+    Lowest = 0,
+    Assignment, // =
+    Coalesce,   //"??"
+    Or,         // ||
+    And,        // &&
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    BitwiseOr,  //|
+    BitwiseXor, //xor
+    BitwiseAnd, //and
+    Shift,      //shl,shr
+    Term,       // + -
+    Factor,     // "* /"
+    Call,       // .
+    Primary,    //::
+}
+
+impl Precedence {
+    pub fn token_precedence(ttype: &TType) -> Self {
+        match ttype {
+            TType::Plus | TType::Minus => Precedence::Term,
+            TType::Lt | TType::Gt | TType::Lte | TType::Gte => Precedence::Comparison,
+            TType::Neq | TType::Equality => Precedence::Equality,
+            TType::Asterisk | TType::Slash => Precedence::Factor,
+            TType::Dot => Precedence::Call,
+            TType::Assign | TType::AddAssign | TType::SubAssign => Precedence::Assignment,
+            _ => Precedence::Lowest,
+        }
+    }
+
+    pub fn next(self) -> Self {
+        match self {
+            Precedence::Lowest => Precedence::Assignment,
+            Precedence::Assignment => Precedence::Coalesce,
+            Precedence::Coalesce => Precedence::Or,
+            Precedence::Or => Precedence::And,
+            Precedence::And => Precedence::Equality,
+            Precedence::Equality => Precedence::Comparison,
+            Precedence::Comparison => Precedence::BitwiseOr,
+            Precedence::BitwiseOr => Precedence::BitwiseXor,
+            Precedence::BitwiseXor => Precedence::BitwiseAnd,
+            Precedence::BitwiseAnd => Precedence::Shift,
+            Precedence::Shift => Precedence::Term,
+            Precedence::Term => Precedence::Factor,
+            Precedence::Factor => Precedence::Call,
+            Precedence::Call => Precedence::Primary,
+            Precedence::Primary => Precedence::Primary,
+        }
+    }
+
+    fn is_right_associative(op: BinaryOp) -> bool {
+        matches!(
+            op,
+            BinaryOp::Assign | BinaryOp::AddAssign | BinaryOp::SubAssign
+        )
+    }
+
+    pub fn prec(ttype: &TType) -> Self {
+        let op = BinaryOp::new(ttype);
+        let op_prec = Precedence::token_precedence(ttype);
+        if Precedence::is_right_associative(op) {
+            op_prec
+        } else {
+            op_prec.next()
+        }
     }
 }

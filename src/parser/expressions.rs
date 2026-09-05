@@ -1,10 +1,76 @@
 use crate::{
-    ast::{Expr, ExprKind, ExprLiteral},
+    ast::{BinaryOp, Expr, ExprKind, ExprLiteral, Precedence},
+    diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
 };
 
 impl Parser {
+    pub fn parse_expr(&mut self, min_prec: Precedence) -> Option<Expr> {
+        let mut left = self.parse_prefix()?;
+        while let Some(token) = self.current_token() {
+            if token.token_type == TType::End {
+                break;
+            }
+
+            if !BinaryOp::is_valid(&token.token_type) {
+                break;
+            }
+
+            let op_prec = Precedence::prec(&token.token_type);
+            if op_prec < min_prec {
+                break;
+            }
+
+            left = self.parse_binary(left)?;
+        }
+
+        Some(left)
+    }
+
+    fn parse_block(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lbrace)?;
+
+        let mut exprs = Vec::new();
+
+        while self.current_token()?.token_type != TType::Rbrace {
+            let expr = self.parse_expr(Precedence::Lowest)?;
+            exprs.push(expr);
+
+            if self.current_token()?.token_type == TType::Semicolon {
+                self.advance();
+            } else if self.current_token()?.token_type != TType::Rbrace {
+                self.report(
+                    "expected ';' or '}'".to_string(),
+                    Some(self.current_token()?.span.clone()),
+                );
+                return None;
+            }
+        }
+
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rbrace)?;
+
+        Some(Expr::new(ExprKind::Block(exprs), Span { start, end }))
+    }
+
+    fn parse_binary(&mut self, left: Expr) -> Option<Expr> {
+        let start = left.span.start;
+        let operator = self.current_token()?.clone();
+        self.advance();
+
+        let op = BinaryOp::new(&operator.token_type);
+        let op_prec = Precedence::prec(&operator.token_type);
+        let right = self.parse_expr(op_prec)?;
+        let end = self.current_token()?.span.end;
+        let span = Span { start, end };
+        Some(Expr::new(
+            ExprKind::Binary(Box::new(left), op, Box::new(right)),
+            span,
+        ))
+    }
+
     fn parse_prefix(&mut self) -> Option<Expr> {
         let token = self.current_token()?.clone();
         match token.token_type {
@@ -22,6 +88,7 @@ impl Parser {
             | TType::FloatLiteral
             | TType::True
             | TType::False => self.parse_literal(),
+            TType::Identifier => self.parse_identifier(),
             _ => {
                 let span = token.span;
                 self.report(
@@ -32,6 +99,14 @@ impl Parser {
                 None
             }
         }
+    }
+
+    pub fn parse_identifier(&mut self) -> Option<Expr> {
+        let token = self.current_token()?.clone();
+        let name = token.lexeme.clone();
+        let span = token.span;
+        self.expect_token(TType::Identifier)?;
+        Some(Expr::new(ExprKind::Identifier(name), span))
     }
 
     fn parse_literal(&mut self) -> Option<Expr> {

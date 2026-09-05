@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    diagnostics::{self, CompilerError, Diag, Span},
+    diagnostics::{CompilerError, Diag, Span},
     lexer::token::{TType, Token},
 };
 
@@ -446,6 +446,14 @@ impl<'a> Lexer<'a> {
                 } else {
                     Token::new(TType::Lt, "<".to_string(), Span::new(start, self.pos))
                 }
+            }
+            Some(';') => {
+                self.advance();
+                Token::new(
+                    TType::Semicolon,
+                    ";".to_string(),
+                    Span::new(start, self.pos),
+                )
             }
             Some('=') => {
                 self.advance();

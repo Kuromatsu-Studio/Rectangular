@@ -1,6 +1,6 @@
 use std::{cell::RefCell, env, fs, rc::Rc};
 
-use crate::{diagnostics::Diagnostics, lexer::Lexer};
+use crate::{diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
 
 mod ast;
 mod diagnostics;
@@ -44,5 +44,13 @@ fn main() -> Result<(), std::io::Error> {
         std::process::exit(1);
     }
     println!("TOKENS : {:?}", tokens);
+
+    let mut parser = Parser::new(tokens, Rc::clone(&diagnostics));
+    let ast = parser.parse();
+    if parser.corrupted {
+        diagnostics.borrow().dump();
+        std::process::exit(1);
+    }
+    println!("AST: {:?}", ast);
     Ok(())
 }
