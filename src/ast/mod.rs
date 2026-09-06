@@ -5,4 +5,5 @@ mod types;
 
 pub use ast::{BinaryOp, Precedence};
 pub use expr::{Expr, ExprKind, ExprLiteral};
-pub use stmt::{Stmt, StmtKind};
+pub use stmt::{ASTParam, Stmt, StmtKind};
+pub use types::{ASTType, ASTTypeKind};

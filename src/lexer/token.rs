@@ -20,6 +20,7 @@ pub enum TType {
     Colon,       //:
     Assign,      //=
     Comma,       //,
+    Bind,        //:=
     Equality,    //==
     Neq,         //`!=`
     AddAssign,   //+=

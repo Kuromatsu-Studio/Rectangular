@@ -3,19 +3,25 @@ use crate::{
     diagnostics::Span,
 };
 
-
-
 ///Paramters like a: i32
 #[derive(Debug)]
-pub struct Param {
-    name: Box<Expr>,
-    ty: Box<ASTType>,
+pub struct ASTParam {
+    pub name: Box<Expr>,
+    pub ty: Box<ASTType>,
 }
 
 #[derive(Debug)]
 pub enum StmtKind {
-    Struct { name: Box<Expr>, params: Vec<Param> },
-    Enum { name: Box<Expr>, block: Vec<Expr> },
+    Record {
+        name: Box<Expr>,
+        params: Vec<ASTParam>,
+    },
+    Enum {
+        name: Box<Expr>,
+        block: Vec<Expr>,
+    },
+    ///This represents a let declaration it specifically houses a let expression
+    Let(Box<Expr>),
 }
 
 #[derive(Debug)]
