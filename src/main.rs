@@ -1,11 +1,5 @@
 use std::{cell::RefCell, env, fs, rc::Rc};
-
-use crate::{diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
-
-mod ast;
-mod diagnostics;
-mod lexer;
-mod parser;
+use rectangular::{diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
 
 fn main() -> Result<(), std::io::Error> {
     let args: Vec<String> = env::args().collect();
