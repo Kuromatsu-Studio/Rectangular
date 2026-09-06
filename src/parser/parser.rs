@@ -1,5 +1,5 @@
 use crate::{
-    ast::Stmt,
+    ast::{ASTType, Stmt},
     diagnostics::{CompilerError, Diag, Span},
     lexer::{TType, Token},
 };
@@ -60,6 +60,29 @@ impl Parser {
                 Some(span),
             );
             None
+        }
+    }
+
+    pub fn parse_type(&mut self) -> Option<ASTType> {
+        let ty_token = self.current_token()?.clone();
+        let span = ty_token.span.clone();
+        match ty_token.token_type {
+            TType::I8Key
+            | TType::U8Key
+            | TType::I16Key
+            | TType::U16Key
+            | TType::I32Key
+            | TType::U32Key => {
+                self.advance();
+                Some(ASTType::basic(&ty_token))
+            }
+            _ => {
+                self.report(
+                    format!("Invalid type token {:?}", ty_token.token_type),
+                    Some(span.clone()),
+                );
+                None
+            }
         }
     }
 

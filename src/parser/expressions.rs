@@ -28,6 +28,29 @@ impl Parser {
         Some(left)
     }
 
+    pub fn parse_let_expr(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Let)?;
+        let name = self.parse_identifier()?;
+        let mut ty = None;
+        if self.current_token()?.token_type == TType::Colon {
+            self.advance(); //Consume the :
+            ty = self.parse_type();
+        }
+        self.expect_token(TType::Bind)?;
+        let init = self.parse_expr(Precedence::Lowest)?;
+        let end = self.current_token()?.span.end;
+        let span = Span { start, end };
+        Some(Expr::new(
+            ExprKind::Let {
+                name: Box::new(name),
+                ty,
+                init: Box::new(init),
+            },
+            span,
+        ))
+    }
+
     fn parse_block(&mut self) -> Option<Expr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbrace)?;
@@ -89,6 +112,8 @@ impl Parser {
             | TType::True
             | TType::False => self.parse_literal(),
             TType::Identifier => self.parse_identifier(),
+            TType::Lbrace => self.parse_block(),
+            TType::Let => self.parse_let_expr(),
             _ => {
                 let span = token.span;
                 self.report(

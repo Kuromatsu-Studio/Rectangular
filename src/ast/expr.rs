@@ -1,4 +1,7 @@
-use crate::{ast::ast::BinaryOp, diagnostics::Span};
+use crate::{
+    ast::{ASTType, ast::BinaryOp},
+    diagnostics::Span,
+};
 
 ///The kind of expression u are dealing with
 #[derive(Debug)]
@@ -6,7 +9,15 @@ pub enum ExprKind {
     Literal(ExprLiteral),
     Binary(Box<Expr>, BinaryOp, Box<Expr>),
     Block(Vec<Expr>),
-    While { cond: Box<Expr>, body: Box<Expr> },
+    Let {
+        name: Box<Expr>,
+        ty: Option<ASTType>,
+        init: Box<Expr>,
+    },
+    While {
+        cond: Box<Expr>,
+        body: Box<Expr>,
+    },
     Identifier(String),
     Return(Box<Expr>),
 }
