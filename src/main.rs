@@ -37,7 +37,6 @@ fn main() -> Result<(), std::io::Error> {
         diagnostics.borrow().dump();
         std::process::exit(1);
     }
-    println!("TOKENS : {:?}", tokens);
 
     let mut parser = Parser::new(tokens, Rc::clone(&diagnostics));
     let ast = parser.parse();

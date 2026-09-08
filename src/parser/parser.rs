@@ -48,6 +48,10 @@ impl Parser {
         self.tokens.get(self.current_pos)
     }
 
+    pub fn peek_token(&self) -> Option<&Token> {
+        self.tokens.get(self.current_pos + 1)
+    }
+
     pub fn expect_token(&mut self, expected: TType) -> Option<()> {
         let token = self.current_token()?.clone();
         if token.token_type == expected {

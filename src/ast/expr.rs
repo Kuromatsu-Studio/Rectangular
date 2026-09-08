@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ASTType, ast::BinaryOp},
+    ast::{ASTParam, ASTType, ast::BinaryOp},
     diagnostics::Span,
 };
 
@@ -17,6 +17,11 @@ pub enum ExprKind {
     While {
         cond: Box<Expr>,
         body: Box<Expr>,
+    },
+    Lambda {
+        params: Vec<ASTParam>,
+        ret_ty: Option<ASTType>,
+        block: Box<Expr>,
     },
     Identifier(String),
     Return(Box<Expr>),

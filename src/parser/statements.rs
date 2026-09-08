@@ -14,6 +14,7 @@ impl Parser {
             TType::Enum => self.parse_enum(),
             TType::Record => self.parse_record(),
             TType::Let => self.parse_let_stmt(),
+            TType::Func => self.parse_func(),
             _ => {
                 self.report(
                     format!("Invalid statement encuntered {:?}", ttype),
@@ -52,7 +53,7 @@ impl Parser {
         ))
     }
 
-    fn parse_param(&mut self) -> Option<ASTParam> {
+    pub fn parse_param(&mut self) -> Option<ASTParam> {
         let name = self.parse_identifier()?;
         self.expect_token(TType::Colon)?;
         let ty = self.parse_type()?;
@@ -60,6 +61,40 @@ impl Parser {
             name: Box::new(name),
             ty: Box::new(ty),
         })
+    }
+
+    fn parse_func(&mut self) -> Option<Stmt> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Func)?;
+        let name = self.parse_identifier()?;
+        let mut params = Vec::new();
+        if self.current_token()?.token_type == TType::Lparen {
+            self.advance();
+            while self.current_token()?.token_type != TType::Rparen
+                && self.current_token()?.token_type != TType::End
+            {
+                let param = self.parse_param()?;
+                params.push(param);
+                if self.current_token()?.token_type == TType::Comma {
+                    self.advance();
+                }
+            }
+            self.expect_token(TType::Rparen)?;
+        }
+        self.expect_token(TType::Colon)?;
+        let ret_ty = self.parse_type()?;
+        let body = self.parse_block()?;
+        let end = self.current_token()?.span.end;
+        let span = Span::new(start, end);
+        Some(Stmt::new(
+            StmtKind::FuncDef {
+                name: Box::new(name),
+                params,
+                ret_ty: Box::new(ret_ty),
+                body: Box::new(body),
+            },
+            span,
+        ))
     }
 
     fn parse_record(&mut self) -> Option<Stmt> {
