@@ -22,6 +22,12 @@ pub enum StmtKind {
     },
     ///This represents a let declaration it specifically houses a let expression
     Let(Box<Expr>),
+    FuncDef {
+        name: Box<Expr>,
+        params: Vec<ASTParam>,
+        ret_ty: Box<ASTType>,
+        body: Box<Expr>,
+    },
 }
 
 #[derive(Debug)]

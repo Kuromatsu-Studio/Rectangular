@@ -51,7 +51,51 @@ impl Parser {
         ))
     }
 
-    fn parse_block(&mut self) -> Option<Expr> {
+    pub fn parse_lambda(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Func)?;
+        let mut params = Vec::new();
+        if self.current_token()?.token_type == TType::Lparen {
+            self.advance();
+            while self.current_token()?.token_type != TType::End
+                && self.current_token()?.token_type != TType::Rparen
+            {
+                let param = self.parse_param()?;
+                params.push(param);
+                if self.current_token()?.token_type == TType::Comma {
+                    self.advance();
+                }
+            }
+            self.expect_token(TType::Rparen)?;
+        }
+
+        let ret_ty = if self.current_token()?.token_type == TType::Colon {
+            self.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
+        let body = if self.current_token()?.token_type == TType::FatArrow {
+            self.advance();
+            self.parse_expr(Precedence::Lowest)?
+        } else {
+            self.parse_block()?
+        };
+        let end = self.current_token()?.span.end;
+        let span = Span::new(start, end);
+
+        Some(Expr::new(
+            ExprKind::Lambda {
+                params,
+                ret_ty,
+                block: Box::new(body),
+            },
+            span,
+        ))
+    }
+
+    pub fn parse_block(&mut self) -> Option<Expr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbrace)?;
 
@@ -114,6 +158,7 @@ impl Parser {
             TType::Identifier => self.parse_identifier(),
             TType::Lbrace => self.parse_block(),
             TType::Let => self.parse_let_expr(),
+            TType::Func => self.parse_lambda(),
             _ => {
                 let span = token.span;
                 self.report(
