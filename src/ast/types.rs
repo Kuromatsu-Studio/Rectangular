@@ -18,6 +18,11 @@ pub enum ASTTypeKind {
     Bool,
     Str,
     Custom(String),
+    Func {
+        params: Vec<ASTType>,
+        ret_ty: Box<Option<ASTType>>,
+    },
+    Tuple(Vec<ASTType>),
     Unit,
     None,
 }
@@ -31,6 +36,27 @@ pub struct ASTType {
 impl ASTType {
     pub fn new(kind: ASTTypeKind, span: Span) -> Self {
         ASTType { kind, span }
+    }
+
+    ///Checks if the token qualifies to start a type
+    pub fn is_type(token_type: TType) -> bool {
+        match token_type {
+            TType::I8Key
+            | TType::U8Key
+            | TType::I16Key
+            | TType::U16Key
+            | TType::I32Key
+            | TType::U32Key
+            | TType::I64Key
+            | TType::U64Key
+            | TType::F32Key
+            | TType::F64Key
+            | TType::BoolKey
+            | TType::StrKey
+            | TType::Func
+            | TType::Lparen => true,
+            _ => false,
+        }
     }
 
     pub fn basic(token: &Token) -> Self {
