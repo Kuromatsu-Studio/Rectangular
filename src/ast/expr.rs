@@ -14,6 +14,11 @@ pub enum ExprKind {
         ty: Option<ASTType>,
         init: Box<Expr>,
     },
+    If {
+        cond: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Box<Option<Expr>>,
+    },
     While {
         cond: Box<Expr>,
         body: Box<Expr>,

@@ -39,13 +39,53 @@ impl Parser {
         }
         self.expect_token(TType::Bind)?;
         let init = self.parse_expr(Precedence::Lowest)?;
-        let end = self.current_token()?.span.end;
+        let end = init.span.end;
         let span = Span { start, end };
         Some(Expr::new(
             ExprKind::Let {
                 name: Box::new(name),
                 ty,
                 init: Box::new(init),
+            },
+            span,
+        ))
+    }
+
+    fn parse_if(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::If)?;
+        let cond = self.parse_expr(Precedence::Lowest)?;
+        let then_branch = self.parse_block()?;
+        let else_branch = if self.current_token()?.token_type == TType::Else {
+            self.advance(); //Consume the else
+            let block = self.parse_block()?;
+            Some(block)
+        } else {
+            None
+        };
+        let end = self.current_token()?.span.end;
+        let span = Span::new(start, end);
+        Some(Expr::new(
+            ExprKind::If {
+                cond: Box::new(cond),
+                then_branch: Box::new(then_branch),
+                else_branch: Box::new(else_branch),
+            },
+            span,
+        ))
+    }
+
+    fn parse_while(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::While)?;
+        let condition = self.parse_expr(Precedence::Lowest)?;
+        let body = self.parse_block()?;
+        let end = body.span.end;
+        let span = Span::new(start, end);
+        Some(Expr::new(
+            ExprKind::While {
+                cond: Box::new(condition),
+                body: Box::new(body),
             },
             span,
         ))
@@ -159,6 +199,8 @@ impl Parser {
             TType::Lbrace => self.parse_block(),
             TType::Let => self.parse_let_expr(),
             TType::Func => self.parse_lambda(),
+            TType::While => self.parse_while(),
+            TType::If => self.parse_if(),
             _ => {
                 let span = token.span;
                 self.report(
