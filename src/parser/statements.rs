@@ -81,8 +81,14 @@ impl Parser {
             }
             self.expect_token(TType::Rparen)?;
         }
-        self.expect_token(TType::Colon)?;
-        let ret_ty = self.parse_type()?;
+
+        let ret_ty = if self.current_token()?.token_type == TType::Colon {
+            self.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
         let body = self.parse_block()?;
         let end = self.current_token()?.span.end;
         let span = Span::new(start, end);

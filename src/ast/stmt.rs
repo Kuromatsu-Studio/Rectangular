@@ -25,7 +25,7 @@ pub enum StmtKind {
     FuncDef {
         name: Box<Expr>,
         params: Vec<ASTParam>,
-        ret_ty: Box<ASTType>,
+        ret_ty: Box<Option<ASTType>>,
         body: Box<Expr>,
     },
 }
