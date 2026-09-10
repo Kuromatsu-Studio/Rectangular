@@ -1,5 +1,8 @@
 use crate::{
-    ast::{ASTParam, ASTType, ast::BinaryOp},
+    ast::{
+        ASTParam, ASTType,
+        ast::{BinaryOp, UnaryOp},
+    },
     diagnostics::Span,
 };
 
@@ -35,6 +38,7 @@ impl DeclPattern {
 pub enum ExprKind {
     Literal(ExprLiteral),
     Binary(Box<Expr>, BinaryOp, Box<Expr>),
+    Unary(UnaryOp, Box<Expr>),
     Block(Vec<Expr>),
     Let {
         pattern: DeclPattern,

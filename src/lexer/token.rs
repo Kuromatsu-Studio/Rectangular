@@ -25,9 +25,12 @@ pub enum TType {
     Neq,         //`!=`
     AddAssign,   //+=
     SubAssign,   //-=
+    DivAssign,   //`/=`
+    MulAssign,   //*=
     Gte,         //>=
     Lte,         //<=
     FatArrow,    //=>
+    DoubleSlash, //'//'
     DoubleColon, //::
     Range,       //..
     Semicolon,   //;

@@ -397,11 +397,36 @@ impl<'a> Lexer<'a> {
             }
             Some('*') => {
                 self.advance();
-                Token::new(TType::Asterisk, "*".to_string(), Span::new(start, self.pos))
+                if let Some('=') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::MulAssign,
+                        "*=".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else {
+                    Token::new(TType::Asterisk, "*".to_string(), Span::new(start, self.pos))
+                }
             }
             Some('/') => {
                 self.advance();
-                Token::new(TType::Slash, "/".to_string(), Span::new(start, self.pos))
+                if let Some('=') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DivAssign,
+                        "/=".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else if let Some('/') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DoubleSlash,
+                        "//".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else {
+                    Token::new(TType::Slash, "/".to_string(), Span::new(start, self.pos))
+                }
             }
             Some(',') => {
                 self.advance();

@@ -5,15 +5,22 @@ use crate::lexer::TType;
 pub enum BinaryOp {
     Add,       //+
     Minus,     //-
+    Mul,       //*
+    Div,       //`/`
+    Quotient,  //'//'
     Gt,        //>
     Gte,       //>=
     Lt,        //<
     Lte,       //<=
     Neq,       //`!=`
     Eq,        //==
+    Modulus,   //%
     Assign,    //=
     AddAssign, //+=
-    SubAssign, //=-
+    SubAssign, //-=
+    MulAssign, //*=
+    DivAssign, //`/=`
+    Access,    //.
     Invalid,
 }
 
@@ -22,6 +29,20 @@ impl BinaryOp {
         match ttype {
             TType::Plus => BinaryOp::Add,
             TType::Minus => BinaryOp::Minus,
+            TType::Asterisk => BinaryOp::Mul,
+            TType::Slash => BinaryOp::Div,
+            TType::DoubleSlash => BinaryOp::Quotient,
+            TType::AddAssign => BinaryOp::AddAssign,
+            TType::SubAssign => BinaryOp::SubAssign,
+            TType::MulAssign => BinaryOp::MulAssign,
+            TType::DivAssign => BinaryOp::DivAssign,
+            TType::Gt => BinaryOp::Gt,
+            TType::Lt => BinaryOp::Lt,
+            TType::Gte => BinaryOp::Gte,
+            TType::Lte => BinaryOp::Lte,
+            TType::Neq => BinaryOp::Neq,
+            TType::Equality => BinaryOp::Eq,
+            TType::Dot => BinaryOp::Access,
             _ => BinaryOp::Invalid,
         }
     }
@@ -30,15 +51,32 @@ impl BinaryOp {
 impl BinaryOp {
     pub fn is_valid(ttype: &TType) -> bool {
         match ttype {
-            TType::Plus | TType::Minus => true,
+            TType::Plus
+            | TType::Minus
+            | TType::Asterisk
+            | TType::AddAssign
+            | TType::SubAssign
+            | TType::MulAssign
+            | TType::DivAssign
+            | TType::Slash
+            | TType::DoubleSlash
+            | TType::Gt
+            | TType::Lt
+            | TType::Neq
+            | TType::Equality
+            | TType::Lte
+            | TType::Gte
+            | TType::Dot => true,
             _ => false,
         }
     }
 }
 
 ///This represents prefix operators
+#[derive(Debug)]
 pub enum UnaryOp {
     Neg, //-
+    Not, //`!`
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
