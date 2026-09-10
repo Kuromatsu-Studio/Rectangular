@@ -3,6 +3,33 @@ use crate::{
     diagnostics::Span,
 };
 
+#[derive(Debug)]
+pub enum DeclPatternKind {
+    /// Something like x
+    Name(Box<Expr>),
+    ///(x,y,z)
+    Tuple(Vec<DeclPattern>),
+    ///Point{x,y} , Point{x:a ,y:b}(field_name, binding_name)
+    Record {
+        name: Box<Expr>,
+        fields: Vec<(Box<Expr>, Option<Box<Expr>>)>,
+    },
+    /// _
+    Wildcard,
+}
+
+#[derive(Debug)]
+pub struct DeclPattern {
+    kind: DeclPatternKind,
+    span: Span,
+}
+
+impl DeclPattern {
+    pub fn new(kind: DeclPatternKind, span: Span) -> Self {
+        DeclPattern { kind, span }
+    }
+}
+
 ///The kind of expression u are dealing with
 #[derive(Debug)]
 pub enum ExprKind {
@@ -10,7 +37,7 @@ pub enum ExprKind {
     Binary(Box<Expr>, BinaryOp, Box<Expr>),
     Block(Vec<Expr>),
     Let {
-        name: Box<Expr>,
+        pattern: DeclPattern,
         ty: Option<ASTType>,
         init: Box<Expr>,
     },
@@ -28,6 +55,7 @@ pub enum ExprKind {
         ret_ty: Option<ASTType>,
         block: Box<Expr>,
     },
+    Tuple(Vec<Expr>),
     Identifier(String),
     Return(Box<Expr>),
 }

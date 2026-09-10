@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BinaryOp, Expr, ExprKind, ExprLiteral, Precedence},
+    ast::{BinaryOp, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral, Precedence},
     diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
@@ -28,10 +28,41 @@ impl Parser {
         Some(left)
     }
 
+    fn parse_pattern(&mut self) -> Option<DeclPattern> {
+        let pattern_tok = self.current_token()?.clone();
+        let span = pattern_tok.span;
+        match pattern_tok.token_type {
+            TType::Identifier => {
+                if pattern_tok.lexeme == "_" {
+                    self.advance();
+                    Some(DeclPattern::new(DeclPatternKind::Wildcard, span))
+                } else {
+                    if self.peek_token()?.token_type == TType::Lbrace {
+                        self.parse_record_pattern()
+                    } else {
+                        let ident = self.parse_identifier()?;
+                        Some(DeclPattern::new(
+                            DeclPatternKind::Name(Box::new(ident)),
+                            span,
+                        ))
+                    }
+                }
+            }
+            TType::Lparen => self.parse_tuple_pattern(),
+            _ => {
+                self.report(
+                    format!("Unexpected pattern start{:?}", pattern_tok.token_type),
+                    Some(span),
+                );
+                None
+            }
+        }
+    }
+
     pub fn parse_let_expr(&mut self) -> Option<Expr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Let)?;
-        let name = self.parse_identifier()?;
+        let pattern = self.parse_pattern()?;
         let mut ty = None;
         if self.current_token()?.token_type == TType::Colon {
             self.advance(); //Consume the :
@@ -43,12 +74,64 @@ impl Parser {
         let span = Span { start, end };
         Some(Expr::new(
             ExprKind::Let {
-                name: Box::new(name),
+                pattern,
                 ty,
                 init: Box::new(init),
             },
             span,
         ))
+    }
+
+    fn parse_record_pattern(&mut self) -> Option<DeclPattern> {
+        let start = self.current_token()?.span.start;
+        let name = self.parse_identifier()?;
+        self.expect_token(TType::Lbrace)?;
+        let mut fields = Vec::new();
+        while self.current_token()?.token_type != TType::Rbrace
+            && self.current_token()?.token_type != TType::End
+        {
+            let field_name = self.parse_identifier()?;
+            let binding = if self.current_token()?.token_type == TType::Colon {
+                self.advance();
+                Some(Box::new(self.parse_identifier()?))
+            } else {
+                None
+            };
+            fields.push((Box::new(field_name), binding));
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            }
+        }
+
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rbrace)?;
+        let span = Span { start, end };
+        Some(DeclPattern::new(
+            DeclPatternKind::Record {
+                name: Box::new(name),
+                fields,
+            },
+            span,
+        ))
+    }
+
+    fn parse_tuple_pattern(&mut self) -> Option<DeclPattern> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lparen)?;
+        let mut tuple_fields = Vec::new();
+        while self.current_token()?.token_type != TType::End
+            && self.current_token()?.token_type != TType::Rparen
+        {
+            let pattern = self.parse_pattern()?;
+            tuple_fields.push(pattern);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            }
+        }
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rparen)?;
+        let span = Span::new(start, end);
+        Some(DeclPattern::new(DeclPatternKind::Tuple(tuple_fields), span))
     }
 
     fn parse_if(&mut self) -> Option<Expr> {
