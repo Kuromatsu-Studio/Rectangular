@@ -62,6 +62,10 @@ pub enum ExprKind {
     Call(Box<Expr>, Vec<Expr>),
     Index(Box<Expr>, Box<Expr>),
     Tuple(Vec<Expr>),
+    Record {
+        name: Box<Expr>,
+        fields: Vec<(Box<Expr>, Box<Expr>)>,
+    },
     Identifier(String),
     Return(Box<Expr>),
 }

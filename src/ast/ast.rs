@@ -36,6 +36,7 @@ impl BinaryOp {
             TType::SubAssign => BinaryOp::SubAssign,
             TType::MulAssign => BinaryOp::MulAssign,
             TType::DivAssign => BinaryOp::DivAssign,
+            TType::Assign => BinaryOp::Assign,
             TType::Gt => BinaryOp::Gt,
             TType::Lt => BinaryOp::Lt,
             TType::Gte => BinaryOp::Gte,
@@ -64,6 +65,7 @@ impl BinaryOp {
             | TType::Lt
             | TType::Neq
             | TType::Equality
+            | TType::Assign
             | TType::Lte
             | TType::Gte
             | TType::Dot => true,

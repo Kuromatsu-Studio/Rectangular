@@ -136,6 +136,54 @@ impl Parser {
         Some(DeclPattern::new(DeclPatternKind::Tuple(tuple_fields), span))
     }
 
+    fn parse_tuple(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lparen)?;
+        let mut fields = Vec::new();
+        while self.current_token()?.token_type != TType::Rparen
+            && self.current_token()?.token_type != TType::End
+        {
+            let field = self.parse_expr(Precedence::Lowest)?;
+            fields.push(field);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            }
+        }
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rparen)?;
+        let span = Span::new(start, end);
+        Some(Expr::new(ExprKind::Tuple(fields), span))
+    }
+
+    fn parse_record_inst(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        let name = self.parse_identifier()?;
+        self.expect_token(TType::Lbrace)?;
+        let mut inst_fields = Vec::new();
+        while self.current_token()?.token_type != TType::End
+            && self.current_token()?.token_type != TType::Rbrace
+        {
+            let inst_name = self.parse_identifier()?;
+            self.expect_token(TType::Colon)?;
+            let inst_init = self.parse_expr(Precedence::Lowest)?;
+            let inst = (Box::new(inst_name), Box::new(inst_init));
+            inst_fields.push(inst);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            }
+        }
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rbrace)?;
+        let span = Span::new(start, end);
+        Some(Expr::new(
+            ExprKind::Record {
+                name: Box::new(name),
+                fields: inst_fields,
+            },
+            span,
+        ))
+    }
+
     fn parse_if(&mut self) -> Option<Expr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::If)?;
@@ -281,12 +329,19 @@ impl Parser {
             | TType::True
             | TType::False => self.parse_literal(),
             TType::Bang | TType::Minus => self.parse_unary(),
-            TType::Identifier => self.parse_identifier(),
+            TType::Identifier => {
+                if self.peek_token()?.token_type == TType::Lbrace {
+                    self.parse_record_inst()
+                } else {
+                    self.parse_identifier()
+                }
+            }
             TType::Lbrace => self.parse_block(),
             TType::Let => self.parse_let_expr(),
             TType::Func => self.parse_lambda(),
             TType::While => self.parse_while(),
             TType::If => self.parse_if(),
+            TType::Lparen => self.parse_tuple(),
             _ => {
                 let span = token.span;
                 self.report(
