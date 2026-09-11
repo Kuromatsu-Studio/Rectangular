@@ -73,10 +73,21 @@ impl BinaryOp {
 }
 
 ///This represents prefix operators
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum UnaryOp {
     Neg, //-
     Not, //`!`
+    Invalid,
+}
+
+impl UnaryOp {
+    pub fn new(ttype: &TType) -> Self {
+        match ttype {
+            TType::Bang => UnaryOp::Not,
+            TType::Minus => UnaryOp::Neg,
+            _ => UnaryOp::Invalid,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]

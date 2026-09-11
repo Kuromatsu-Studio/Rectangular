@@ -59,6 +59,8 @@ pub enum ExprKind {
         ret_ty: Option<ASTType>,
         block: Box<Expr>,
     },
+    Call(Box<Expr>, Vec<Expr>),
+    Index(Box<Expr>, Box<Expr>),
     Tuple(Vec<Expr>),
     Identifier(String),
     Return(Box<Expr>),

@@ -1,5 +1,7 @@
 use crate::{
-    ast::{BinaryOp, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral, Precedence},
+    ast::{
+        BinaryOp, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral, Precedence, UnaryOp,
+    },
     diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
@@ -7,7 +9,7 @@ use crate::{
 
 impl Parser {
     pub fn parse_expr(&mut self, min_prec: Precedence) -> Option<Expr> {
-        let mut left = self.parse_prefix()?;
+        let mut left = self.parse_prefix_with_postfix()?;
         while let Some(token) = self.current_token() {
             if token.token_type == TType::End {
                 break;
@@ -278,6 +280,7 @@ impl Parser {
             | TType::FloatLiteral
             | TType::True
             | TType::False => self.parse_literal(),
+            TType::Bang | TType::Minus => self.parse_unary(),
             TType::Identifier => self.parse_identifier(),
             TType::Lbrace => self.parse_block(),
             TType::Let => self.parse_let_expr(),
@@ -294,6 +297,94 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn parse_unary(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        let ttype = self.current_token()?.token_type.clone();
+        let op = UnaryOp::new(&ttype);
+        if op == UnaryOp::Invalid {
+            self.report(
+                format!("Invalid unary operator {:?}", ttype),
+                Some(self.current_token()?.span.clone()),
+            );
+        }
+        self.advance();
+        let expr = self.parse_prefix()?;
+        let end = expr.span.end;
+        let span = Span::new(start, end);
+        Some(Expr::new(ExprKind::Unary(op, Box::new(expr)), span))
+    }
+
+    fn parse_prefix_with_postfix(&mut self) -> Option<Expr> {
+        let mut expr = self.parse_prefix()?;
+        let valid_postfix = |t: TType| match t {
+            TType::Lparen | TType::Lbracket => true,
+            _ => false,
+        };
+        while let Some(token) = self.current_token() {
+            if valid_postfix(token.token_type.clone()) {
+                expr = self.parse_postfix(expr)?;
+            } else {
+                break;
+            }
+        }
+        Some(expr)
+    }
+
+    fn parse_postfix(&mut self, left: Expr) -> Option<Expr> {
+        let token = self.current_token()?.clone();
+        let span = Span {
+            start: left.span.start,
+            end: token.span.end,
+        };
+        match token.token_type {
+            TType::Lparen => self.parse_call(left),
+            TType::Lbracket => self.parse_index(left),
+            _ => {
+                self.report("Invalid postfix expression".to_string(), Some(span));
+                None
+            }
+        }
+    }
+
+    fn parse_index(&mut self, left: Expr) -> Option<Expr> {
+        let start = left.span.start;
+        self.expect_token(TType::Lbracket)?;
+        let index = self.parse_expr(Precedence::Lowest)?;
+        self.expect_token(TType::Rbracket)?;
+        let end = self.current_token()?.span.end;
+        let span = Span::new(start, end);
+        Some(Expr::new(
+            ExprKind::Index(Box::new(left), Box::new(index)),
+            span,
+        ))
+    }
+
+    fn parse_call_arguments(&mut self) -> Option<Vec<Expr>> {
+        let mut args = Vec::new();
+        self.expect_token(TType::Lparen)?;
+        while self.current_token()?.token_type != TType::Rparen
+            && self.current_token()?.token_type != TType::End
+        {
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+                continue;
+            }
+            let expr = self.parse_expr(Precedence::Lowest)?;
+            args.push(expr);
+        }
+
+        self.expect_token(TType::Rparen)?;
+        Some(args)
+    }
+
+    fn parse_call(&mut self, left: Expr) -> Option<Expr> {
+        let args = self.parse_call_arguments()?;
+        let end = self.current_token()?.span.end;
+        let start = left.span.start;
+        let span = Span::new(start, end);
+        Some(Expr::new(ExprKind::Call(Box::new(left), args), span))
     }
 
     pub fn parse_identifier(&mut self) -> Option<Expr> {

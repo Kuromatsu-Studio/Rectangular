@@ -16,6 +16,8 @@ pub enum TType {
     Rbrace,      //}
     Lparen,      //(
     Rparen,      //)
+    Lbracket,    //[
+    Rbracket,    //]
     Bang,        //`!`
     Colon,       //:
     Assign,      //=

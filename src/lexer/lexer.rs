@@ -395,6 +395,14 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 Token::new(TType::Rbrace, "}".to_string(), Span::new(start, self.pos))
             }
+            Some('[') => {
+                self.advance();
+                Token::new(TType::Lbracket, "[".to_string(), Span::new(start, self.pos))
+            }
+            Some(']') => {
+                self.advance();
+                Token::new(TType::Rbracket, "]".to_string(), Span::new(start, self.pos))
+            }
             Some('*') => {
                 self.advance();
                 if let Some('=') = self.current_char() {
