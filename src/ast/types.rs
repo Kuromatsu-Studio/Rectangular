@@ -31,7 +31,7 @@ pub enum ASTTypeKind {
 
 #[derive(Debug)]
 pub struct ASTType {
-    kind: ASTTypeKind,
+    pub kind: ASTTypeKind,
     span: Span,
 }
 

@@ -1,5 +1,5 @@
+use rectangular::{ast::pretty_module, diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
 use std::{cell::RefCell, env, fs, rc::Rc};
-use rectangular::{diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
 
 fn main() -> Result<(), std::io::Error> {
     let args: Vec<String> = env::args().collect();
@@ -44,6 +44,7 @@ fn main() -> Result<(), std::io::Error> {
         diagnostics.borrow().dump();
         std::process::exit(1);
     }
-    println!("AST: {:?}", ast);
+    println!("{}", pretty_module(ast));
+
     Ok(())
 }

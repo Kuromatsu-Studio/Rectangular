@@ -23,7 +23,7 @@ pub enum DeclPatternKind {
 
 #[derive(Debug)]
 pub struct DeclPattern {
-    kind: DeclPatternKind,
+    pub kind: DeclPatternKind,
     span: Span,
 }
 
@@ -90,7 +90,7 @@ pub enum ExprLiteral {
 ///The overall expression structure
 #[derive(Debug)]
 pub struct Expr {
-    kind: ExprKind,
+    pub kind: ExprKind,
     pub span: Span,
 }
 
