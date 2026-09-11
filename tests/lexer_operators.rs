@@ -1,8 +1,7 @@
 mod common;
 
 use common::{make_diag, make_lexer};
-use rectangular::{diagnostics, lexer::{TType, Token}};
-
+use rectangular::lexer::TType;
 
 // Lexer Operator Tests.
 #[test]
