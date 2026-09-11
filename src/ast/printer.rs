@@ -1,6 +1,5 @@
 use std::fmt;
 
-// Adjust these imports to match your crate structure
 use crate::ast::ast::{BinaryOp, UnaryOp};
 use crate::ast::{
     ASTParam, ASTType, ASTTypeKind, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral,
