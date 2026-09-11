@@ -66,6 +66,7 @@ pub enum ExprKind {
         name: Box<Expr>,
         fields: Vec<(Box<Expr>, Box<Expr>)>,
     },
+    Array(Vec<Expr>),
     Identifier(String),
     Return(Box<Expr>),
 }

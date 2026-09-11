@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ASTType, ASTTypeKind},
+    ast::{ASTType, ASTTypeKind, Precedence},
     diagnostics::Span,
     lexer::TType,
     parser::Parser,
@@ -33,6 +33,7 @@ impl Parser {
                     self.parse_unit_type()
                 }
             }
+            TType::Lbracket => self.parse_array_type(),
             _ => {
                 self.report(
                     format!("Invalid type token {:?}", ty_token.token_type),
@@ -104,6 +105,21 @@ impl Parser {
                 params: ty_params,
                 ret_ty: Box::new(ret_ty),
             },
+            span,
+        ))
+    }
+
+    fn parse_array_type(&mut self) -> Option<ASTType> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lbracket)?;
+        let element_type = self.parse_type()?;
+        self.expect_token(TType::Semicolon)?;
+        let array_size = self.parse_expr(Precedence::Lowest)?;
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rbracket)?;
+        let span = Span::new(start, end);
+        Some(ASTType::new(
+            ASTTypeKind::Array(Box::new(element_type), Box::new(array_size)),
             span,
         ))
     }

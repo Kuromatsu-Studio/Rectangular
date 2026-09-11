@@ -53,7 +53,7 @@ impl Parser {
             TType::Lparen => self.parse_tuple_pattern(),
             _ => {
                 self.report(
-                    format!("Unexpected pattern start{:?}", pattern_tok.token_type),
+                    format!("Unexpected pattern start {:?}", pattern_tok.token_type),
                     Some(span),
                 );
                 None
@@ -268,6 +268,25 @@ impl Parser {
         ))
     }
 
+    fn parse_array_literal(&mut self) -> Option<Expr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lbracket)?;
+        let mut elements = Vec::new();
+        while self.current_token()?.token_type != TType::End
+            && self.current_token()?.token_type != TType::Rbracket
+        {
+            let expr = self.parse_expr(Precedence::Lowest)?;
+            elements.push(expr);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            }
+        }
+        let end = self.current_token()?.span.end;
+        self.expect_token(TType::Rbracket)?;
+        let span = Span::new(start, end);
+        Some(Expr::new(ExprKind::Array(elements), span))
+    }
+
     pub fn parse_block(&mut self) -> Option<Expr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbrace)?;
@@ -337,6 +356,7 @@ impl Parser {
                 }
             }
             TType::Lbrace => self.parse_block(),
+            TType::Lbracket => self.parse_array_literal(),
             TType::Let => self.parse_let_expr(),
             TType::Func => self.parse_lambda(),
             TType::While => self.parse_while(),
