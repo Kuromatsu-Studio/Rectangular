@@ -15,10 +15,6 @@ fn indent(f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
     Ok(())
 }
 
-fn indent_str(depth: usize) -> String {
-    "    ".repeat(depth)
-}
-
 impl fmt::Display for Span {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}..{}", self.start, self.end)
