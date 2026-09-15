@@ -58,6 +58,30 @@ fn int_literal_u8_suffix(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
+
+#[test]
+fn int_literal_i16_suffix(){
+    let diag = make_diag("i16");
+    let mut lexer = make_lexer("16i16", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::I16Literal);
+    assert_eq!(tokens[0].lexeme, "16");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+
+#[test]
+fn int_literal_u16_suffix(){
+    let diag = make_diag("u16");
+    let mut lexer = make_lexer("16u16", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::U16Literal);
+    assert_eq!(tokens[0].lexeme, "16");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
 #[test]
 fn int_literal_i32_suffix(){
     let diag = make_diag("32i32");
