@@ -35,3 +35,14 @@ fn int_literal_with_underscore(){
     assert_eq!(tokens[0].lexeme, "1000000");
     assert_eq!(tokens[1].token_type, TType::End);
 }
+
+#[test]
+fn int_literal_i32_suffix(){
+    let diag = make_diag("8i32");
+    let mut lexer = make_lexer("8i32", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::I32Literal);
+    assert_eq!(tokens[0].lexeme, "8");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
