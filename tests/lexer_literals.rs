@@ -58,7 +58,6 @@ fn int_literal_u8_suffix(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
-
 #[test]
 fn int_literal_i16_suffix(){
     let diag = make_diag("i16");
@@ -69,7 +68,6 @@ fn int_literal_i16_suffix(){
     assert_eq!(tokens[0].lexeme, "16");
     assert_eq!(tokens[1].token_type, TType::End);
 }
-
 
 #[test]
 fn int_literal_u16_suffix(){
@@ -125,3 +123,37 @@ fn int_literal_u64_suffix(){
     assert_eq!(tokens[0].lexeme, "67");
     assert_eq!(tokens[1].token_type, TType::End);
 }
+
+#[test]
+fn float_literal(){
+    let diag = make_diag("6.7");
+    let mut lexer = make_lexer("6.7", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::FloatLiteral);
+    assert_eq!(tokens[0].lexeme, "6.7");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn float_f32_literal(){
+    let diag = make_diag("6.7f32");
+    let mut lexer = make_lexer("6.7f32", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::F32Literal);
+    assert_eq!(tokens[0].lexeme, "6.7");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn float_f64_literal(){
+    let diag = make_diag("6.7f64");
+    let mut lexer = make_lexer("6.7f64", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::F64Literal);
+    assert_eq!(tokens[0].lexeme, "6.7");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
