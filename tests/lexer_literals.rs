@@ -79,3 +79,25 @@ fn int_literal_u32_suffix(){
     assert_eq!(tokens[0].lexeme, "32");
     assert_eq!(tokens[1].token_type, TType::End);
 }
+
+#[test]
+fn int_literal_i64_suffix(){
+    let diag = make_diag("67i64");
+    let mut lexer = make_lexer("67i64", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::I64Literal);
+    assert_eq!(tokens[0].lexeme, "67");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn int_literal_u64_suffix(){
+    let diag = make_diag("67u64");
+    let mut lexer = make_lexer("67u64", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::U64Literal);
+    assert_eq!(tokens[0].lexeme, "67");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
