@@ -88,7 +88,7 @@ impl<'a> Lexer<'a> {
             } else {
                 break;
             }
-        }
+       }
     }
 
     fn skip_comment(&mut self) {
