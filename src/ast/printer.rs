@@ -2,8 +2,8 @@ use std::fmt;
 
 use crate::ast::ast::{BinaryOp, UnaryOp};
 use crate::ast::{
-    ASTParam, ASTType, ASTTypeKind, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral,
-    Stmt, StmtKind,
+    ASTParam, ASTStmt, ASTType, ASTTypeKind, DeclPattern, DeclPatternKind, Expr, ExprKind,
+    ExprLiteral, FuncTarget, StmtKind,
 };
 use crate::diagnostics::Span;
 
@@ -602,7 +602,17 @@ impl fmt::Display for Expr {
     }
 }
 
-impl Stmt {
+impl fmt::Display for FuncTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FuncTarget::None => write!(f, "none"),
+            FuncTarget::Server => write!(f, "server"),
+            FuncTarget::Client => write!(f, "client"),
+        }
+    }
+}
+
+impl ASTStmt {
     fn fmt_pretty(&self, f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
         match &self.kind {
             StmtKind::Record { name, params } => {
@@ -660,15 +670,27 @@ impl Stmt {
                 )?;
                 expr.fmt_pretty(f, depth)
             }
-
+            StmtKind::TargetBlock { target, funcs } => {
+                indent(f, depth)?;
+                write!(f, "TargetBlock({}) @ {} {{", target, self.span)?;
+                for func in funcs {
+                    write!(f, "\n")?;
+                    func.fmt_pretty(f, depth + 1)?;
+                }
+                write!(f, "\n")?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
             StmtKind::FuncDef {
+                target,
                 name,
                 params,
                 ret_ty,
                 body,
+                ..
             } => {
                 indent(f, depth)?;
-                write!(f, "FuncDef({}) @ {} {{", name, self.span)?;
+                write!(f, "FuncDef({}) {} @ {} {{", name, target, self.span)?;
                 write!(
                     f,
                     "
@@ -716,13 +738,13 @@ impl Stmt {
     }
 }
 
-impl fmt::Display for Stmt {
+impl fmt::Display for ASTStmt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.fmt_pretty(f, 0)
     }
 }
 
-pub fn pretty_module(stmts: Vec<Stmt>) -> String {
+pub fn pretty_module(stmts: Vec<ASTStmt>) -> String {
     let mut out = String::new();
     for (i, stmt) in stmts.iter().enumerate() {
         if i > 0 {

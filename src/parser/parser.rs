@@ -1,5 +1,5 @@
 use crate::{
-    ast::Stmt,
+    ast::ASTStmt,
     diagnostics::{CompilerError, Diag, Span},
     lexer::{TType, Token},
 };
@@ -21,7 +21,7 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Vec<Stmt> {
+    pub fn parse(&mut self) -> Vec<ASTStmt> {
         let mut stmts = Vec::new();
         while self.current_pos < self.tokens.len() {
             if let Some(token) = self.current_token().clone() {
