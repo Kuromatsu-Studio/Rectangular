@@ -250,10 +250,8 @@ fn int_literal_garbage_suffix(){
     let mut lexer = make_lexer("8xyz", Rc::clone(&diag));
     let tokens = lexer.tokenize();
 
-    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].token_type, TType::Illegal);
     assert_eq!(tokens[0].lexeme, "8");
     assert_eq!(tokens[1].token_type, TType::End);
-    // Documents the known bug: an unrecognized suffix is silently
-    // accepted with no diagnostic reported.
-    assert_eq!(diag.borrow().errors.len(), 0);
+    assert_eq!(diag.borrow().errors.len(), 1);
 }

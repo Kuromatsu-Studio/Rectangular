@@ -283,7 +283,14 @@ impl<'a> Lexer<'a> {
             "u32" => TType::U32Literal,
             "i8" => TType::I8Literal,
             "u8" => TType::U8Literal,
-            _ => TType::IntLiteral,
+            "" => TType::IntLiteral,
+            _ => {
+                self.report(
+                    format!("Invalid integer suffix: '{}'", suffix),
+                    Some(Span {start: span.start, end}),
+                );
+                TType::Illegal
+            }
         };
 
         Token::new(
