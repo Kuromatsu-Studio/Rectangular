@@ -157,3 +157,35 @@ fn float_f64_literal(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
+#[test]
+fn plain_hex_literal(){
+    let diag = make_diag("0xff");
+    let mut lexer = make_lexer("0xff", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].lexeme, "0xff");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn hex_literal_with_suffix(){
+    let diag = make_diag("0xffu32");
+    let mut lexer = make_lexer("0xffu32", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::U32Literal);
+    assert_eq!(tokens[0].lexeme, "0xff");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn hex_literal_with_underscore(){
+    let diag = make_diag("0xff_ff");
+    let mut lexer = make_lexer("0xff_ff", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].lexeme, "0xffff");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
