@@ -189,3 +189,36 @@ fn hex_literal_with_underscore(){
     assert_eq!(tokens[0].lexeme, "0xffff");
     assert_eq!(tokens[1].token_type, TType::End);
 }
+
+#[test]
+fn plain_binary_literal(){
+    let diag = make_diag("0b1010");
+    let mut lexer = make_lexer("0b1010", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].lexeme, "0b1010");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn binary_literal_with_suffix(){
+    let diag = make_diag("0b1010u8");
+    let mut lexer = make_lexer("0b1010u8", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::U8Literal);
+    assert_eq!(tokens[0].lexeme, "0b1010");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn binary_literal_with_underscore(){
+    let diag = make_diag("0b1010_1010");
+    let mut lexer = make_lexer("0b1010_1010", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].lexeme, "0b10101010");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
