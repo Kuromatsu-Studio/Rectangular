@@ -2,6 +2,7 @@ mod common;
 
 use common::{make_diag, make_lexer};
 use rectangular::lexer::TType;
+use std::rc::Rc;
 
 #[test]
 fn plain_int_literal(){
@@ -221,4 +222,38 @@ fn binary_literal_with_underscore(){
     assert_eq!(tokens[0].token_type, TType::IntLiteral);
     assert_eq!(tokens[0].lexeme, "0b10101010");
     assert_eq!(tokens[1].token_type, TType::End);
+}
+
+#[test]
+fn unterminated_hex_literal(){
+    let diag = make_diag("0x");
+    let mut lexer = make_lexer("0x", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+#[test]
+fn unterminated_binary_literal(){
+    let diag = make_diag("0b");
+    let mut lexer = make_lexer("0b", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+#[test]
+fn int_literal_garbage_suffix(){
+    let diag = make_diag("8xyz");
+    let mut lexer = make_lexer("8xyz", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::IntLiteral);
+    assert_eq!(tokens[0].lexeme, "8");
+    assert_eq!(tokens[1].token_type, TType::End);
+    // Documents the known bug: an unrecognized suffix is silently
+    // accepted with no diagnostic reported.
+    assert_eq!(diag.borrow().errors.len(), 0);
 }
