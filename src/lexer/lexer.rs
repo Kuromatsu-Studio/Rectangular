@@ -67,16 +67,26 @@ impl<'a> Lexer<'a> {
         keywords
     }
 
+    fn char_at(&self, byte: usize) -> Option<char> {
+        self.src.get(byte..)?.chars().next()
+    }
+
     fn current_char(&self) -> Option<char> {
-        self.src.chars().nth(self.pos)
+        self.char_at(self.pos)
     }
 
     fn peek_char(&self) -> Option<char> {
-        self.src.chars().nth(self.pos + 1)
+        if let Some(c) = self.current_char() {
+            self.char_at(self.pos + c.len_utf8())
+        } else {
+            None
+        }
     }
 
     fn advance(&mut self) {
-        self.pos += 1;
+        if let Some(c) = self.current_char() {
+            self.pos += c.len_utf8();
+        }
     }
 
     fn skip_whitespace(&mut self) {
@@ -88,7 +98,7 @@ impl<'a> Lexer<'a> {
             } else {
                 break;
             }
-       }
+        }
     }
 
     fn skip_comment(&mut self) {
@@ -287,7 +297,10 @@ impl<'a> Lexer<'a> {
             _ => {
                 self.report(
                     format!("Invalid integer suffix: '{}'", suffix),
-                    Some(Span {start: span.start, end}),
+                    Some(Span {
+                        start: span.start,
+                        end,
+                    }),
                 );
                 TType::Illegal
             }
