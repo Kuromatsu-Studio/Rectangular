@@ -1,7 +1,7 @@
 mod common;
 
 use common::make_diag;
-use rectangular::diagnostics::Span;
+use rectangular::diagnostics::{CompilerError, Span};
 
 // get_line_col tests
 #[test]
@@ -72,4 +72,14 @@ fn line_snippet_first_line(){
 fn line_snippet_middle_line(){
     let diag = make_diag("ab\ncd\nef");
     assert_eq!(diag.borrow().source_map.get_line_snippet(4), "cd");
+}
+
+// compilererror tests
+#[test]
+fn report_error_goes_to_errors(){
+    let diag = make_diag("let x = 5");
+    diag.borrow_mut().report(CompilerError::error("bad thing".to_string(), None, None));
+
+    assert_eq!(diag.borrow().errors.len(), 1);
+    assert_eq!(diag.borrow().warnings.len(), 0);
 }
