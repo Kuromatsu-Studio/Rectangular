@@ -9,7 +9,7 @@ fn single_plus_token(){
     let diag = make_diag("+");
     let mut lexer =  make_lexer("+", diag);
     let tokens = lexer.tokenize();
-
+    println!("tokens array: {:?}", tokens);
     assert_eq!(tokens[0].token_type, TType::Plus);
     assert_eq!(tokens[0].lexeme, "+");
     assert_eq!(tokens[1].token_type, TType::End);
