@@ -6,6 +6,12 @@ use crate::{
     diagnostics::Span,
 };
 
+#[derive(Debug)]
+pub struct ASTParam {
+    pub name: Box<ASTExpr>,
+    pub ty: Box<ASTType>,
+}
+
 ///The kind of expression u are dealing with
 #[derive(Debug)]
 pub enum ASTExprKind {
@@ -18,6 +24,11 @@ pub enum ASTExprKind {
         names: Vec<ASTExpr>,
         ty: Option<ASTType>,
         init: Option<Box<ASTExpr>>,
+    },
+    Lambda {
+        params: Vec<ASTParam>,
+        ret_ty: Option<ASTType>,
+        body: Box<ASTExpr>,
     },
     Call(Box<ASTExpr>, Vec<ASTExpr>),
     Index(Box<ASTExpr>, Box<ASTExpr>),
