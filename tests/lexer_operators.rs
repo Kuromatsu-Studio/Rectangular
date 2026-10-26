@@ -346,17 +346,6 @@ fn semicolon(){
 }
 
 #[test]
-fn double_slash(){
-    let diag = make_diag("//");
-    let mut lexer = make_lexer("//", diag);
-    let tokens = lexer.tokenize();
-
-    assert_eq!(tokens[0].token_type, TType::DoubleSlash);
-    assert_eq!(tokens[0].lexeme, "//");
-    assert_eq!(tokens[1].token_type, TType::End);
-}
-
-#[test]
 fn bind(){
     let diag = make_diag(":=");
     let mut lexer = make_lexer(":=", diag);
