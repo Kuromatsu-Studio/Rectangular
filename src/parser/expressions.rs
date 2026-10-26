@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ASTExpr, ASTExprKind, ASTExprLiteral, BinaryOp, Precedence, UnaryOp},
+    ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, BinaryOp, Precedence, UnaryOp},
     diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
@@ -26,6 +26,53 @@ impl Parser {
         }
 
         Some(left)
+    }
+
+    fn parse_param(&mut self) -> Option<ASTParam> {
+        let name = self.parse_identifier()?;
+        self.expect_token(TType::Colon)?;
+        let ty = self.parse_type()?;
+        Some(ASTParam {
+            name: Box::new(name),
+            ty: Box::new(ty),
+        })
+    }
+
+    fn parse_lambda(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Lparen)?;
+        let mut params = Vec::new();
+        loop {
+            let param = self.parse_param()?;
+            params.push(param);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect_token(TType::Rparen)?;
+
+        let ret_ty = if self.current_token()?.token_type == TType::Colon {
+            self.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
+        self.expect_token(TType::Arrow)?;
+        let body = self.parse_expr(Precedence::Lowest)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+
+        Some(ASTExpr::new(
+            ASTExprKind::Lambda {
+                params,
+                ret_ty,
+                body: Box::new(body),
+            },
+            span,
+        ))
     }
 
     pub fn parse_bind(&mut self) -> Option<ASTExpr> {
@@ -160,6 +207,7 @@ impl Parser {
             | TType::True
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
+            TType::Lparen => self.parse_lambda(),
             TType::Bang | TType::Minus => self.parse_unary(),
             TType::Identifier => self.parse_identifier(),
             TType::Lbrace => self.parse_block(),

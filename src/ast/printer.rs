@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::ast::ast::{BinaryOp, UnaryOp};
-use crate::ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTType, ASTTypeKind};
+use crate::ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType, ASTTypeKind};
 use crate::diagnostics::Span;
 
 fn indent(f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
@@ -91,12 +91,44 @@ impl fmt::Display for ASTType {
     }
 }
 
+impl fmt::Display for ASTParam {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Param {}: {}", self.name.as_ref(), self.ty.as_ref())
+    }
+}
+
 impl ASTExpr {
     fn fmt_pretty(&self, f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
         match &self.kind {
             ASTExprKind::Literal(lit) => {
                 indent(f, depth)?;
                 write!(f, "Literal({}) @ {}", lit, self.span)
+            }
+
+            ASTExprKind::Lambda {
+                params,
+                ret_ty,
+                body,
+            } => {
+                indent(f, depth)?;
+                write!(f, "Lambda: ")?;
+
+                write!(f, "(")?;
+                for (i, param) in params.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", param)?;
+                }
+                write!(f, ")")?;
+
+                if let Some(ty) = ret_ty {
+                    write!(f, " -> {}", ty)?;
+                }
+
+                write!(f, " {{")?;
+                write!(f, "{}", body)?;
+                write!(f, "}}")
             }
 
             ASTExprKind::Bind {
