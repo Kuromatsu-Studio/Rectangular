@@ -199,7 +199,7 @@ fn rbrace(){
 
     assert_eq!(tokens[0].token_type, TType::Rbrace);
     assert_eq!(tokens[0].lexeme, "}");
-    assert_eq!(tokens[1].token_type, TType::End);
+    assert_eq!(tokens[2].token_type, TType::End);
 }
 
 #[test]
@@ -221,7 +221,7 @@ fn rparen(){
 
     assert_eq!(tokens[0].token_type, TType::Rparen);
     assert_eq!(tokens[0].lexeme, ")");
-    assert_eq!(tokens[1].token_type, TType::End);
+    assert_eq!(tokens[2].token_type, TType::End);
 }
 
 #[test]
@@ -243,7 +243,7 @@ fn rbracket(){
 
     assert_eq!(tokens[0].token_type, TType::Rbracket);
     assert_eq!(tokens[0].lexeme, "]");
-    assert_eq!(tokens[1].token_type, TType::End);
+    assert_eq!(tokens[2].token_type, TType::End);
 }
 
 #[test]
@@ -346,12 +346,12 @@ fn semicolon(){
 }
 
 #[test]
-fn bind(){
+fn bindassign(){
     let diag = make_diag(":=");
     let mut lexer = make_lexer(":=", diag);
     let tokens = lexer.tokenize();
 
-    assert_eq!(tokens[0].token_type, TType::Bind);
+    assert_eq!(tokens[0].token_type, TType::BindAssign);
     assert_eq!(tokens[0].lexeme, ":=");
     assert_eq!(tokens[1].token_type, TType::End);
 }
