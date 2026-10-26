@@ -1,5 +1,5 @@
 use crate::{
-    ast::ASTStmt,
+    ast::{ASTExpr, Precedence},
     diagnostics::{CompilerError, Diag, Span},
     lexer::{TType, Token},
 };
@@ -7,6 +7,7 @@ use crate::{
 pub struct Parser {
     tokens: Vec<Token>,
     current_pos: usize,
+    pub last_end: usize,
     diagnostics: Diag,
     pub corrupted: bool,
 }
@@ -17,29 +18,47 @@ impl Parser {
             tokens,
             current_pos: 0,
             diagnostics,
+            last_end: 0,
             corrupted: false,
         }
     }
 
-    pub fn parse(&mut self) -> Vec<ASTStmt> {
+    pub fn parse(&mut self) -> Vec<ASTExpr> {
         let mut stmts = Vec::new();
-        while self.current_pos < self.tokens.len() {
-            if let Some(token) = self.current_token().clone() {
-                if token.token_type == TType::End {
-                    break;
-                }
-                if let Some(stmt) = self.parse_stmt() {
-                    stmts.push(stmt);
-                } else {
+        loop {
+            let tt = match self.current_token() {
+                Some(t) => t.token_type.clone(),
+                None => break,
+            };
+
+            if tt == TType::End {
+                break;
+            }
+            if tt == TType::Semicolon {
+                self.advance();
+                continue;
+            }
+
+            let Some(stmt) = self.parse_expr(Precedence::Lowest) else {
+                break;
+            };
+            stmts.push(stmt);
+
+            match self.current_token().map(|t| t.token_type.clone()) {
+                Some(TType::Semicolon) => self.advance(),
+                Some(TType::End) | None => {}
+                Some(_) => {
+                    let span = self.current_token().map(|t| t.span.clone());
+                    self.report("expected ';' or end of input".to_string(), span);
                     break;
                 }
             }
         }
         stmts
     }
-
     pub fn advance(&mut self) {
         if self.current_pos < self.tokens.len() {
+            self.last_end = self.tokens[self.current_pos].span.end;
             self.current_pos += 1;
         }
     }

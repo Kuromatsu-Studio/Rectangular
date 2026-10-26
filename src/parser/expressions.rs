@@ -1,14 +1,12 @@
 use crate::{
-    ast::{
-        BinaryOp, DeclPattern, DeclPatternKind, Expr, ExprKind, ExprLiteral, Precedence, UnaryOp,
-    },
+    ast::{ASTExpr, ASTExprKind, ASTExprLiteral, BinaryOp, Precedence, UnaryOp},
     diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
 };
 
 impl Parser {
-    pub fn parse_expr(&mut self, min_prec: Precedence) -> Option<Expr> {
+    pub fn parse_expr(&mut self, min_prec: Precedence) -> Option<ASTExpr> {
         let mut left = self.parse_prefix_with_postfix()?;
         while let Some(token) = self.current_token() {
             if token.token_type == TType::End {
@@ -30,245 +28,55 @@ impl Parser {
         Some(left)
     }
 
-    fn parse_pattern(&mut self) -> Option<DeclPattern> {
-        let pattern_tok = self.current_token()?.clone();
-        let span = pattern_tok.span;
-        match pattern_tok.token_type {
-            TType::Identifier => {
-                if pattern_tok.lexeme == "_" {
-                    self.advance();
-                    Some(DeclPattern::new(DeclPatternKind::Wildcard, span))
-                } else {
-                    if self.peek_token()?.token_type == TType::Lbrace {
-                        self.parse_record_pattern()
-                    } else {
-                        let ident = self.parse_identifier()?;
-                        Some(DeclPattern::new(
-                            DeclPatternKind::Name(Box::new(ident)),
-                            span,
-                        ))
-                    }
-                }
-            }
-            TType::Lparen => self.parse_tuple_pattern(),
-            _ => {
-                self.report(
-                    format!("Unexpected pattern start {:?}", pattern_tok.token_type),
-                    Some(span),
-                );
-                None
-            }
-        }
-    }
-
-    pub fn parse_let_expr(&mut self) -> Option<Expr> {
+    pub fn parse_bind(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
-        self.expect_token(TType::Let)?;
-        let pattern = self.parse_pattern()?;
-        let mut ty = None;
-        if self.current_token()?.token_type == TType::Colon {
-            self.advance(); //Consume the :
-            ty = self.parse_type();
-        }
         self.expect_token(TType::Bind)?;
-        let init = self.parse_expr(Precedence::Lowest)?;
-        let end = init.span.end;
-        let span = Span { start, end };
-        Some(Expr::new(
-            ExprKind::Let {
-                pattern,
-                ty,
-                init: Box::new(init),
-            },
-            span,
-        ))
-    }
+        let mut names = Vec::new();
 
-    fn parse_record_pattern(&mut self) -> Option<DeclPattern> {
-        let start = self.current_token()?.span.start;
-        let name = self.parse_identifier()?;
-        self.expect_token(TType::Lbrace)?;
-        let mut fields = Vec::new();
-        while self.current_token()?.token_type != TType::Rbrace
-            && self.current_token()?.token_type != TType::End
-        {
-            let field_name = self.parse_identifier()?;
-            let binding = if self.current_token()?.token_type == TType::Colon {
+        loop {
+            let name = self.parse_identifier()?;
+            names.push(name);
+            if self.current_token()?.token_type == TType::Comma {
                 self.advance();
-                Some(Box::new(self.parse_identifier()?))
             } else {
-                None
-            };
-            fields.push((Box::new(field_name), binding));
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
+                break;
             }
         }
 
-        let end = self.current_token()?.span.end;
-        self.expect_token(TType::Rbrace)?;
-        let span = Span { start, end };
-        Some(DeclPattern::new(
-            DeclPatternKind::Record {
-                name: Box::new(name),
-                fields,
-            },
-            span,
-        ))
-    }
-
-    fn parse_tuple_pattern(&mut self) -> Option<DeclPattern> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::Lparen)?;
-        let mut tuple_fields = Vec::new();
-        while self.current_token()?.token_type != TType::End
-            && self.current_token()?.token_type != TType::Rparen
-        {
-            let pattern = self.parse_pattern()?;
-            tuple_fields.push(pattern);
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            }
-        }
-        let end = self.current_token()?.span.end;
-        self.expect_token(TType::Rparen)?;
-        let span = Span::new(start, end);
-        Some(DeclPattern::new(DeclPatternKind::Tuple(tuple_fields), span))
-    }
-
-    fn parse_tuple(&mut self) -> Option<Expr> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::Lparen)?;
-        let mut fields = Vec::new();
-        while self.current_token()?.token_type != TType::Rparen
-            && self.current_token()?.token_type != TType::End
-        {
-            let field = self.parse_expr(Precedence::Lowest)?;
-            fields.push(field);
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            }
-        }
-        let end = self.current_token()?.span.end;
-        self.expect_token(TType::Rparen)?;
-        let span = Span::new(start, end);
-        Some(Expr::new(ExprKind::Tuple(fields), span))
-    }
-
-    fn parse_record_inst(&mut self) -> Option<Expr> {
-        let start = self.current_token()?.span.start;
-        let name = self.parse_identifier()?;
-        self.expect_token(TType::Lbrace)?;
-        let mut inst_fields = Vec::new();
-        while self.current_token()?.token_type != TType::End
-            && self.current_token()?.token_type != TType::Rbrace
-        {
-            let inst_name = self.parse_identifier()?;
-            self.expect_token(TType::Colon)?;
-            let inst_init = self.parse_expr(Precedence::Lowest)?;
-            let inst = (Box::new(inst_name), Box::new(inst_init));
-            inst_fields.push(inst);
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            }
-        }
-        let end = self.current_token()?.span.end;
-        self.expect_token(TType::Rbrace)?;
-        let span = Span::new(start, end);
-        Some(Expr::new(
-            ExprKind::Record {
-                name: Box::new(name),
-                fields: inst_fields,
-            },
-            span,
-        ))
-    }
-
-    fn parse_if(&mut self) -> Option<Expr> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::If)?;
-        let cond = self.parse_expr(Precedence::Lowest)?;
-        let then_branch = self.parse_block()?;
-        let else_branch = if self.current_token()?.token_type == TType::Else {
-            self.advance(); //Consume the else
-            let block = self.parse_block()?;
-            Some(block)
-        } else {
-            None
-        };
-        let end = self.current_token()?.span.end;
-        let span = Span::new(start, end);
-        Some(Expr::new(
-            ExprKind::If {
-                cond: Box::new(cond),
-                then_branch: Box::new(then_branch),
-                else_branch: Box::new(else_branch),
-            },
-            span,
-        ))
-    }
-
-    fn parse_while(&mut self) -> Option<Expr> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::While)?;
-        let condition = self.parse_expr(Precedence::Lowest)?;
-        let body = self.parse_block()?;
-        let end = body.span.end;
-        let span = Span::new(start, end);
-        Some(Expr::new(
-            ExprKind::While {
-                cond: Box::new(condition),
-                body: Box::new(body),
-            },
-            span,
-        ))
-    }
-
-    pub fn parse_lambda(&mut self) -> Option<Expr> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::Func)?;
-        let mut params = Vec::new();
-        if self.current_token()?.token_type == TType::Lparen {
-            self.advance();
-            while self.current_token()?.token_type != TType::End
-                && self.current_token()?.token_type != TType::Rparen
-            {
-                let param = self.parse_param()?;
-                params.push(param);
-                if self.current_token()?.token_type == TType::Comma {
-                    self.advance();
-                }
-            }
-            self.expect_token(TType::Rparen)?;
-        }
-
-        let ret_ty = if self.current_token()?.token_type == TType::Colon {
+        let ty = if self.current_token()?.token_type == TType::Colon {
             self.advance();
             Some(self.parse_type()?)
         } else {
             None
         };
 
-        let body = if self.current_token()?.token_type == TType::FatArrow {
+        let mutbind = self.current_token()?.token_type == TType::Assign;
+        let immutbind = self.current_token()?.token_type == TType::BindAssign;
+        let mut mutable = false;
+
+        let init = if mutbind || immutbind {
+            mutable = mutbind;
             self.advance();
-            self.parse_expr(Precedence::Lowest)?
+            Some(Box::new(self.parse_expr(Precedence::Lowest)?))
         } else {
-            self.parse_block()?
+            None
         };
-        let end = self.current_token()?.span.end;
+
+        let end = self.last_end;
         let span = Span::new(start, end);
 
-        Some(Expr::new(
-            ExprKind::Lambda {
-                params,
-                ret_ty,
-                block: Box::new(body),
+        Some(ASTExpr::new(
+            ASTExprKind::Bind {
+                mutable,
+                names,
+                ty,
+                init,
             },
             span,
         ))
     }
 
-    fn parse_array_literal(&mut self) -> Option<Expr> {
+    fn parse_array_literal(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbracket)?;
         let mut elements = Vec::new();
@@ -284,16 +92,20 @@ impl Parser {
         let end = self.current_token()?.span.end;
         self.expect_token(TType::Rbracket)?;
         let span = Span::new(start, end);
-        Some(Expr::new(ExprKind::Array(elements), span))
+        Some(ASTExpr::new(ASTExprKind::Array(elements), span))
     }
 
-    pub fn parse_block(&mut self) -> Option<Expr> {
+    pub fn parse_block(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbrace)?;
 
         let mut exprs = Vec::new();
 
         while self.current_token()?.token_type != TType::Rbrace {
+            if self.current_token()?.token_type == TType::Semicolon {
+                self.advance();
+                continue;
+            }
             let expr = self.parse_expr(Precedence::Lowest)?;
             exprs.push(expr);
 
@@ -311,10 +123,10 @@ impl Parser {
         let end = self.current_token()?.span.end;
         self.expect_token(TType::Rbrace)?;
 
-        Some(Expr::new(ExprKind::Block(exprs), Span { start, end }))
+        Some(ASTExpr::new(ASTExprKind::Block(exprs), Span { start, end }))
     }
 
-    fn parse_binary(&mut self, left: Expr) -> Option<Expr> {
+    fn parse_binary(&mut self, left: ASTExpr) -> Option<ASTExpr> {
         let start = left.span.start;
         let operator = self.current_token()?.clone();
         self.advance();
@@ -324,13 +136,13 @@ impl Parser {
         let right = self.parse_expr(op_prec)?;
         let end = self.current_token()?.span.end;
         let span = Span { start, end };
-        Some(Expr::new(
-            ExprKind::Binary(Box::new(left), op, Box::new(right)),
+        Some(ASTExpr::new(
+            ASTExprKind::Binary(Box::new(left), op, Box::new(right)),
             span,
         ))
     }
 
-    fn parse_prefix(&mut self) -> Option<Expr> {
+    fn parse_prefix(&mut self) -> Option<ASTExpr> {
         let token = self.current_token()?.clone();
         match token.token_type {
             TType::I8Literal
@@ -347,21 +159,11 @@ impl Parser {
             | TType::FloatLiteral
             | TType::True
             | TType::False => self.parse_literal(),
+            TType::Bind => self.parse_bind(),
             TType::Bang | TType::Minus => self.parse_unary(),
-            TType::Identifier => {
-                if self.peek_token()?.token_type == TType::Lbrace {
-                    self.parse_record_inst()
-                } else {
-                    self.parse_identifier()
-                }
-            }
+            TType::Identifier => self.parse_identifier(),
             TType::Lbrace => self.parse_block(),
             TType::Lbracket => self.parse_array_literal(),
-            TType::Let => self.parse_let_expr(),
-            TType::Func => self.parse_lambda(),
-            TType::While => self.parse_while(),
-            TType::If => self.parse_if(),
-            TType::Lparen => self.parse_tuple(),
             _ => {
                 let span = token.span;
                 self.report(
@@ -374,7 +176,7 @@ impl Parser {
         }
     }
 
-    fn parse_unary(&mut self) -> Option<Expr> {
+    fn parse_unary(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         let ttype = self.current_token()?.token_type.clone();
         let op = UnaryOp::new(&ttype);
@@ -388,10 +190,10 @@ impl Parser {
         let expr = self.parse_prefix()?;
         let end = expr.span.end;
         let span = Span::new(start, end);
-        Some(Expr::new(ExprKind::Unary(op, Box::new(expr)), span))
+        Some(ASTExpr::new(ASTExprKind::Unary(op, Box::new(expr)), span))
     }
 
-    fn parse_prefix_with_postfix(&mut self) -> Option<Expr> {
+    fn parse_prefix_with_postfix(&mut self) -> Option<ASTExpr> {
         let mut expr = self.parse_prefix()?;
         let valid_postfix = |t: TType| match t {
             TType::Lparen | TType::Lbracket => true,
@@ -407,7 +209,7 @@ impl Parser {
         Some(expr)
     }
 
-    fn parse_postfix(&mut self, left: Expr) -> Option<Expr> {
+    fn parse_postfix(&mut self, left: ASTExpr) -> Option<ASTExpr> {
         let token = self.current_token()?.clone();
         let span = Span {
             start: left.span.start,
@@ -423,20 +225,20 @@ impl Parser {
         }
     }
 
-    fn parse_index(&mut self, left: Expr) -> Option<Expr> {
+    fn parse_index(&mut self, left: ASTExpr) -> Option<ASTExpr> {
         let start = left.span.start;
         self.expect_token(TType::Lbracket)?;
         let index = self.parse_expr(Precedence::Lowest)?;
         self.expect_token(TType::Rbracket)?;
-        let end = self.current_token()?.span.end;
+        let end = self.last_end;
         let span = Span::new(start, end);
-        Some(Expr::new(
-            ExprKind::Index(Box::new(left), Box::new(index)),
+        Some(ASTExpr::new(
+            ASTExprKind::Index(Box::new(left), Box::new(index)),
             span,
         ))
     }
 
-    fn parse_call_arguments(&mut self) -> Option<Vec<Expr>> {
+    fn parse_call_arguments(&mut self) -> Option<Vec<ASTExpr>> {
         let mut args = Vec::new();
         self.expect_token(TType::Lparen)?;
         while self.current_token()?.token_type != TType::Rparen
@@ -454,34 +256,40 @@ impl Parser {
         Some(args)
     }
 
-    fn parse_call(&mut self, left: Expr) -> Option<Expr> {
+    fn parse_call(&mut self, left: ASTExpr) -> Option<ASTExpr> {
         let args = self.parse_call_arguments()?;
-        let end = self.current_token()?.span.end;
         let start = left.span.start;
+        let end = self.last_end;
         let span = Span::new(start, end);
-        Some(Expr::new(ExprKind::Call(Box::new(left), args), span))
+        Some(ASTExpr::new(ASTExprKind::Call(Box::new(left), args), span))
     }
 
-    pub fn parse_identifier(&mut self) -> Option<Expr> {
+    pub fn parse_identifier(&mut self) -> Option<ASTExpr> {
         let token = self.current_token()?.clone();
         let name = token.lexeme.clone();
         let span = token.span;
         self.expect_token(TType::Identifier)?;
-        Some(Expr::new(ExprKind::Identifier(name), span))
+        Some(ASTExpr::new(ASTExprKind::Identifier(name), span))
     }
 
-    fn parse_literal(&mut self) -> Option<Expr> {
+    fn parse_literal(&mut self) -> Option<ASTExpr> {
         let token = self.current_token()?.clone();
         let span = self.current_token()?.span.clone();
 
         match token.token_type {
             TType::True => {
                 self.advance();
-                Some(Expr::new(ExprKind::Literal(ExprLiteral::Bool(true)), span))
+                Some(ASTExpr::new(
+                    ASTExprKind::Literal(ASTExprLiteral::Bool(true)),
+                    span,
+                ))
             }
             TType::False => {
                 self.advance();
-                Some(Expr::new(ExprKind::Literal(ExprLiteral::Bool(false)), span))
+                Some(ASTExpr::new(
+                    ASTExprKind::Literal(ASTExprLiteral::Bool(false)),
+                    span,
+                ))
             }
             TType::I8Literal
             | TType::U8Literal
@@ -497,7 +305,7 @@ impl Parser {
             | TType::FloatLiteral => {
                 let lit = self.get_value(&token)?;
                 self.advance();
-                Some(Expr::new(ExprKind::Literal(lit), span))
+                Some(ASTExpr::new(ASTExprKind::Literal(lit), span))
             }
             _ => {
                 self.report(
@@ -529,56 +337,56 @@ impl Parser {
         num_str.parse::<f64>().ok()
     }
 
-    pub fn get_value(&mut self, token: &Token) -> Option<ExprLiteral> {
+    pub fn get_value(&mut self, token: &Token) -> Option<ASTExprLiteral> {
         let lexeme = &token.lexeme;
         match token.token_type {
             TType::I8Literal => {
                 let value = self.parse_number(lexeme)? as i8;
-                Some(ExprLiteral::I8(value))
+                Some(ASTExprLiteral::I8(value))
             }
             TType::U8Literal => {
                 let value = self.parse_number(lexeme)? as u8;
-                Some(ExprLiteral::U8(value))
+                Some(ASTExprLiteral::U8(value))
             }
             TType::I16Literal => {
                 let value = self.parse_number(lexeme)? as i16;
-                Some(ExprLiteral::I16(value))
+                Some(ASTExprLiteral::I16(value))
             }
             TType::U16Literal => {
                 let value = self.parse_number(lexeme)? as u16;
-                Some(ExprLiteral::U16(value))
+                Some(ASTExprLiteral::U16(value))
             }
             TType::I32Literal => {
                 let value = self.parse_number(lexeme)? as i32;
-                Some(ExprLiteral::I32(value))
+                Some(ASTExprLiteral::I32(value))
             }
             TType::U32Literal => {
                 let value = self.parse_number(lexeme)? as u32;
-                Some(ExprLiteral::U32(value))
+                Some(ASTExprLiteral::U32(value))
             }
             TType::I64Literal => {
                 let value = self.parse_number(lexeme)? as i64;
-                Some(ExprLiteral::I64(value))
+                Some(ASTExprLiteral::I64(value))
             }
             TType::U64Literal => {
                 let value = self.parse_number(lexeme)? as u64;
-                Some(ExprLiteral::U64(value))
+                Some(ASTExprLiteral::U64(value))
             }
             TType::IntLiteral => {
                 let value = self.parse_number(lexeme)? as i32;
-                Some(ExprLiteral::I32(value))
+                Some(ASTExprLiteral::I32(value))
             }
             TType::F32Literal => {
                 let value = self.parse_float(lexeme)? as f32;
-                Some(ExprLiteral::F32(value))
+                Some(ASTExprLiteral::F32(value))
             }
             TType::F64Literal => {
                 let value = self.parse_float(lexeme)? as f64;
-                Some(ExprLiteral::F64(value))
+                Some(ASTExprLiteral::F64(value))
             }
             TType::FloatLiteral => {
                 let value = self.parse_float(lexeme)? as f32;
-                Some(ExprLiteral::F32(value))
+                Some(ASTExprLiteral::F32(value))
             }
             _ => {
                 let span = token.clone().span;

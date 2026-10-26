@@ -2,13 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     diagnostics::{CompilerError, Diag, Span},
-    lexer::token::{TType, Token},
+    lexer::token::{TType, Token, ends_expression},
 };
 
 pub struct Lexer<'a> {
     pos: usize,
     keywords: HashMap<String, TType>,
     src: &'a str,
+    saw_newline: bool,
     diagnostics: Diag,
     pub corrupted: bool,
 }
@@ -21,34 +22,18 @@ impl<'a> Lexer<'a> {
             keywords,
             src,
             diagnostics,
+            saw_newline: false,
             corrupted: false,
         }
     }
 
     fn load_keywords() -> HashMap<String, TType> {
         let keywords = HashMap::from([
-            ("let".to_string(), TType::Let),
-            ("mut".to_string(), TType::Mut),
-            ("func".to_string(), TType::Func),
-            ("enum".to_string(), TType::Enum),
-            ("union".to_string(), TType::Union),
-            ("record".to_string(), TType::Record),
-            ("alias".to_string(), TType::Alias),
-            ("as".to_string(), TType::As),
-            ("while".to_string(), TType::While),
-            ("if".to_string(), TType::If),
-            ("else".to_string(), TType::Else),
-            ("match".to_string(), TType::Match),
-            ("for".to_string(), TType::For),
-            ("client".to_string(), TType::Client),
-            ("server".to_string(), TType::Server),
-            ("async".to_string(), TType::Async),
-            ("await".to_string(), TType::Await),
             ("true".to_string(), TType::True),
             ("false".to_string(), TType::False),
-            ("from".to_string(), TType::From),
-            ("import".to_string(), TType::Import),
             ("return".to_string(), TType::Return),
+            ("struct".to_string(), TType::Struct),
+            ("bind".to_string(), TType::Bind),
             ("i8".to_string(), TType::I8Key),
             ("u8".to_string(), TType::U8Key),
             ("i16".to_string(), TType::I16Key),
@@ -59,10 +44,7 @@ impl<'a> Lexer<'a> {
             ("u64".to_string(), TType::U64Key),
             ("f32".to_string(), TType::F32Key),
             ("f64".to_string(), TType::F64Key),
-            ("str".to_string(), TType::StrKey),
             ("bool".to_string(), TType::BoolKey),
-            ("extern".to_string(), TType::Extern),
-            ("ffi".to_string(), TType::Ffi),
         ]);
         keywords
     }
@@ -89,11 +71,26 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn needs_semicolon(&self, prev: Option<&Token>, next: &Token) -> bool {
+        let Some(prev) = prev else { return false };
+        let at_line_break = self.saw_newline || next.token_type == TType::End;
+        at_line_break
+            && ends_expression(&prev.token_type)
+            && !matches!(
+                next.token_type,
+                TType::Rbrace | TType::Rparen | TType::Rbracket
+            )
+    }
+
     fn skip_whitespace(&mut self) {
+        self.saw_newline = false;
         while let Some(ch) = self.current_char() {
-            if ch.is_whitespace() {
+            if ch == '\n' {
+                self.saw_newline = true;
                 self.advance();
-            } else if ch == '#' {
+            } else if ch.is_whitespace() {
+                self.advance();
+            } else if ch == '/' && matches!(self.peek_char(), Some('/') | Some('*')) {
                 self.skip_comment();
             } else {
                 break;
@@ -102,43 +99,37 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_comment(&mut self) {
-        if let Some(ch) = self.current_char() {
-            if ch == '#' {
-                self.advance(); // Consume the initial #
+        let start = self.pos;
+        self.advance(); // first '/'
 
-                if let Some(nch) = self.current_char() {
-                    if nch == '#' {
-                        // Multi-line comment
-                        self.advance(); // Consume the second #
-                        let mut closed = false;
-
-                        while let Some(c) = self.current_char() {
-                            if c == '#' && self.peek_char() == Some('#') {
-                                self.advance();
-                                self.advance();
-                                closed = true;
-                                break;
-                            }
-                            self.advance();
-                        }
-
-                        if !closed {
-                            let span = Span {
-                                start: self.pos,
-                                end: self.pos + 1,
-                            };
-                            self.report("Unterminated multi-line comment".to_string(), Some(span));
-                        }
-                    } else {
-                        // Single-line comment
-                        while let Some(c) = self.current_char() {
-                            if c == '\n' {
-                                break;
-                            }
-                            self.advance();
-                        }
-                    }
+        if self.current_char() == Some('/') {
+            // line comment: stop *before* the newline so step 2 still sees it
+            while let Some(c) = self.current_char() {
+                if c == '\n' {
+                    break;
                 }
+                self.advance();
+            }
+        } else {
+            self.advance(); // the '*'
+            let mut closed = false;
+            while let Some(c) = self.current_char() {
+                if c == '*' && self.peek_char() == Some('/') {
+                    self.advance();
+                    self.advance();
+                    closed = true;
+                    break;
+                }
+                if c == '\n' {
+                    self.saw_newline = true;
+                } // multi-line comment counts as a newline
+                self.advance();
+            }
+            if !closed {
+                self.report(
+                    "Unterminated block comment".to_string(),
+                    Some(Span::new(start, start + 2)),
+                );
             }
         }
     }
@@ -395,6 +386,9 @@ impl<'a> Lexer<'a> {
                         "-=".to_string(),
                         Span::new(start, self.pos),
                     )
+                } else if let Some('>') = self.current_char() {
+                    self.advance();
+                    Token::new(TType::Arrow, "->".to_string(), Span::new(start, self.pos))
                 } else {
                     Token::new(TType::Minus, "-".to_string(), Span::new(start, self.pos))
                 }
@@ -445,13 +439,6 @@ impl<'a> Lexer<'a> {
                         "/=".to_string(),
                         Span::new(start, self.pos),
                     )
-                } else if let Some('/') = self.current_char() {
-                    self.advance();
-                    Token::new(
-                        TType::DoubleSlash,
-                        "//".to_string(),
-                        Span::new(start, self.pos),
-                    )
                 } else {
                     Token::new(TType::Slash, "/".to_string(), Span::new(start, self.pos))
                 }
@@ -480,7 +467,11 @@ impl<'a> Lexer<'a> {
                     )
                 } else if let Some('=') = self.current_char() {
                     self.advance();
-                    Token::new(TType::Bind, ":=".to_string(), Span::new(start, self.pos))
+                    Token::new(
+                        TType::BindAssign,
+                        ":=".to_string(),
+                        Span::new(start, self.pos),
+                    )
                 } else {
                     Token::new(TType::Colon, ":".to_string(), Span::new(start, self.pos))
                 }
@@ -545,10 +536,20 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn tokenize(&mut self) -> Vec<Token> {
-        let mut tokens = Vec::new();
+        let mut tokens: Vec<Token> = Vec::new();
         loop {
             let token = self.next_token();
             let is_end = token.token_type == TType::End;
+
+            if self.needs_semicolon(tokens.last(), &token) {
+                let at = tokens.last().map(|t| t.span.end).unwrap_or(0);
+                tokens.push(Token::new(
+                    TType::Semicolon,
+                    ";".to_string(),
+                    Span::new(at, at),
+                ));
+            }
+
             tokens.push(token);
             if is_end {
                 break;

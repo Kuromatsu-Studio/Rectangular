@@ -22,7 +22,7 @@ pub enum TType {
     Colon,       //:
     Assign,      //=
     Comma,       //,
-    Bind,        //:=
+    BindAssign,  //:=
     Equality,    //==
     Neq,         //`!=`
     AddAssign,   //+=
@@ -32,7 +32,7 @@ pub enum TType {
     Gte,         //>=
     Lte,         //<=
     FatArrow,    //=>
-    DoubleSlash, //'//'
+    Arrow,       //->
     DoubleColon, //::
     Range,       //..
     Semicolon,   //;
@@ -55,28 +55,11 @@ pub enum TType {
     FloatLiteral, //8.7
 
     ///keywords
-    Let,
-    Mut,
-    Func,
-    Enum,
-    Union,
-    Record,
-    Alias,
-    As,
-    While,
-    For,
-    If,
-    Else,
-    Match,
-    Server,
-    Client,
-    Async,
-    Await,
-    Import,
-    From,
+    Macro,
+    Type,
     Return,
-    Extern,
-    Ffi,
+    Bind,
+    Struct,
 
     ///Type keywords
     I8Key,
@@ -89,13 +72,48 @@ pub enum TType {
     U64Key,
     F32Key,
     F64Key,
-    StrKey,
     BoolKey,
 
     ///EOF
     End,
     ///Illegal
     Illegal,
+}
+
+pub fn ends_expression(t: &TType) -> bool {
+    matches!(
+        t,
+        TType::Identifier
+            | TType::IntLiteral
+            | TType::FloatLiteral
+            | TType::I8Literal
+            | TType::U8Literal
+            | TType::I16Literal
+            | TType::U16Literal
+            | TType::I32Literal
+            | TType::U32Literal
+            | TType::I64Literal
+            | TType::U64Literal
+            | TType::F32Literal
+            | TType::F64Literal
+            | TType::True
+            | TType::False
+            | TType::I8Key
+            | TType::U8Key
+            | TType::I16Key
+            | TType::U16Key
+            | TType::I32Key
+            | TType::U32Key
+            | TType::I64Key
+            | TType::U64Key
+            | TType::F32Key
+            | TType::F64Key
+            | TType::BoolKey
+            | TType::Rparen
+            | TType::Rbracket
+            | TType::Rbrace
+            | TType::Return
+    )
 }
 
 #[derive(Clone, Debug)]

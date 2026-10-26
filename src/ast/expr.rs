@@ -1,79 +1,34 @@
 use crate::{
     ast::{
-        ASTParam, ASTType,
+        ASTType,
         ast::{BinaryOp, UnaryOp},
     },
     diagnostics::Span,
 };
 
-#[derive(Debug)]
-pub enum DeclPatternKind {
-    /// Something like x
-    Name(Box<Expr>),
-    ///(x,y,z)
-    Tuple(Vec<DeclPattern>),
-    ///Point{x,y} , Point{x:a ,y:b}(field_name, binding_name)
-    Record {
-        name: Box<Expr>,
-        fields: Vec<(Box<Expr>, Option<Box<Expr>>)>,
-    },
-    /// _
-    Wildcard,
-}
-
-#[derive(Debug)]
-pub struct DeclPattern {
-    pub kind: DeclPatternKind,
-    span: Span,
-}
-
-impl DeclPattern {
-    pub fn new(kind: DeclPatternKind, span: Span) -> Self {
-        DeclPattern { kind, span }
-    }
-}
-
 ///The kind of expression u are dealing with
 #[derive(Debug)]
-pub enum ExprKind {
-    Literal(ExprLiteral),
-    Binary(Box<Expr>, BinaryOp, Box<Expr>),
-    Unary(UnaryOp, Box<Expr>),
-    Block(Vec<Expr>),
-    Let {
-        pattern: DeclPattern,
+pub enum ASTExprKind {
+    Literal(ASTExprLiteral),
+    Binary(Box<ASTExpr>, BinaryOp, Box<ASTExpr>),
+    Unary(UnaryOp, Box<ASTExpr>),
+    Block(Vec<ASTExpr>),
+    Bind {
+        mutable: bool,
+        names: Vec<ASTExpr>,
         ty: Option<ASTType>,
-        init: Box<Expr>,
+        init: Option<Box<ASTExpr>>,
     },
-    If {
-        cond: Box<Expr>,
-        then_branch: Box<Expr>,
-        else_branch: Box<Option<Expr>>,
-    },
-    While {
-        cond: Box<Expr>,
-        body: Box<Expr>,
-    },
-    Lambda {
-        params: Vec<ASTParam>,
-        ret_ty: Option<ASTType>,
-        block: Box<Expr>,
-    },
-    Call(Box<Expr>, Vec<Expr>),
-    Index(Box<Expr>, Box<Expr>),
-    Tuple(Vec<Expr>),
-    Record {
-        name: Box<Expr>,
-        fields: Vec<(Box<Expr>, Box<Expr>)>,
-    },
-    Array(Vec<Expr>),
+    Call(Box<ASTExpr>, Vec<ASTExpr>),
+    Index(Box<ASTExpr>, Box<ASTExpr>),
+    Array(Vec<ASTExpr>),
     Identifier(String),
-    Return(Box<Expr>),
+    Return(Box<ASTExpr>),
 }
 
 ///These represent the literals like a raw number
 #[derive(Debug)]
-pub enum ExprLiteral {
+pub enum ASTExprLiteral {
     I8(i8),
     U8(u8),
     I16(i16),
@@ -89,13 +44,13 @@ pub enum ExprLiteral {
 
 ///The overall expression structure
 #[derive(Debug)]
-pub struct Expr {
-    pub kind: ExprKind,
+pub struct ASTExpr {
+    pub kind: ASTExprKind,
     pub span: Span,
 }
 
-impl Expr {
-    pub fn new(kind: ExprKind, span: Span) -> Self {
-        Expr { kind, span }
+impl ASTExpr {
+    pub fn new(kind: ASTExprKind, span: Span) -> Self {
+        ASTExpr { kind, span }
     }
 }

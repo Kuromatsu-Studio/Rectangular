@@ -7,7 +7,6 @@ pub enum BinaryOp {
     Minus,     //-
     Mul,       //*
     Div,       //`/`
-    Quotient,  //'//'
     Gt,        //>
     Gte,       //>=
     Lt,        //<
@@ -31,7 +30,6 @@ impl BinaryOp {
             TType::Minus => BinaryOp::Minus,
             TType::Asterisk => BinaryOp::Mul,
             TType::Slash => BinaryOp::Div,
-            TType::DoubleSlash => BinaryOp::Quotient,
             TType::AddAssign => BinaryOp::AddAssign,
             TType::SubAssign => BinaryOp::SubAssign,
             TType::MulAssign => BinaryOp::MulAssign,
@@ -60,7 +58,6 @@ impl BinaryOp {
             | TType::MulAssign
             | TType::DivAssign
             | TType::Slash
-            | TType::DoubleSlash
             | TType::Gt
             | TType::Lt
             | TType::Neq
