@@ -1,6 +1,4 @@
-mod common;
-
-use common::{make_diag, make_lexer};
+use crate::common::{make_diag, make_lexer};
 use rectangular::lexer::TType;
 
 #[test]
