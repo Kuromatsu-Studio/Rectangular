@@ -1,7 +1,12 @@
+#[macro_use] mod macro_f;
+
 use crate::common::{make_diag, make_lexer};
 use rectangular::lexer::TType;
 
-#[test]
+
+// common_test(function name, string of what you want to test, the type you expect)
+common_test!(plain_identifier, "myvar", Identifier);
+/* #[test]
 fn plain_identifier(){
     let diag = make_diag("myvar");
     let mut lexer = make_lexer("myvar", diag);
@@ -10,14 +15,14 @@ fn plain_identifier(){
     assert_eq!(tokens[0].token_type, TType::Identifier);
     assert_eq!(tokens[0].lexeme, "myvar");
     assert_eq!(tokens[2].token_type, TType::End);
-}
+} */
 
 #[test]
 fn identifier_starting_with_keyword(){
     let diag = make_diag("lett");
     let mut lexer = make_lexer("lett", diag);
     let tokens = lexer.tokenize();
-    println!("Tokens array: {:?}",tokens);
+
     assert_eq!(tokens[0].token_type, TType::Identifier);
     assert_eq!(tokens[0].lexeme, "lett");
     assert_eq!(tokens[2].token_type, TType::End);
