@@ -5,50 +5,13 @@ use rectangular::lexer::TType;
 
 
 // common_test(function name, string of what you want to test, the type you expect)
-common_test!(plain_identifier, "myvar", Identifier);
-/* #[test]
-fn plain_identifier(){
-    let diag = make_diag("myvar");
-    let mut lexer = make_lexer("myvar", diag);
-    let tokens = lexer.tokenize();
+test!(plain_identifier, "myvar", Identifier);
 
-    assert_eq!(tokens[0].token_type, TType::Identifier);
-    assert_eq!(tokens[0].lexeme, "myvar");
-    assert_eq!(tokens[2].token_type, TType::End);
-} */
-
-#[test]
-fn identifier_starting_with_keyword(){
-    let diag = make_diag("lett");
-    let mut lexer = make_lexer("lett", diag);
-    let tokens = lexer.tokenize();
-
-    assert_eq!(tokens[0].token_type, TType::Identifier);
-    assert_eq!(tokens[0].lexeme, "lett");
-    assert_eq!(tokens[2].token_type, TType::End);
-}
+test!(identifier_starting_with_keyword, "lett", Identifier);
 
 // Keywords
-
-#[test]
-fn keyword_true(){
-    let diag = make_diag("true");
-    let mut lexer = make_lexer("true", diag);
-    let tokens = lexer.tokenize();
-    assert_eq!(tokens[0].token_type, TType::True);
-    assert_eq!(tokens[0].lexeme, "true");
-    assert_eq!(tokens[2].token_type, TType::End);
-}
-
-#[test]
-fn keyword_false(){
-    let diag = make_diag("false");
-    let mut lexer = make_lexer("false", diag);
-    let tokens = lexer.tokenize();
-    assert_eq!(tokens[0].token_type, TType::False);
-    assert_eq!(tokens[0].lexeme, "false");
-    assert_eq!(tokens[2].token_type, TType::End);
-}
+test!(keyword_true, "true", True);
+test!(keyword_false, "false", False);
 
 // Type keywords
 #[test]

@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! common_test {
+macro_rules! test {
     ($fname:ident, $teststr:expr, $ttype:ident) => {
         #[test]
         fn $fname(){
