@@ -1,7 +1,9 @@
 use std::fmt;
 
 use crate::ast::ast::{BinaryOp, UnaryOp};
-use crate::ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType, ASTTypeKind};
+use crate::ast::{
+    ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType, ASTTypeKind,
+};
 use crate::diagnostics::Span;
 
 fn indent(f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
@@ -97,6 +99,12 @@ impl fmt::Display for ASTParam {
     }
 }
 
+impl fmt::Display for ASTConstructorMember {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Member {}= {}", self.name.as_ref(), self.val.as_ref())
+    }
+}
+
 impl ASTExpr {
     fn fmt_pretty(&self, f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
         match &self.kind {
@@ -170,6 +178,18 @@ impl ASTExpr {
                     }
                     write!(f, "Member {} ", member)?;
                 }
+                write!(f, "}}")
+            }
+
+            ASTExprKind::StructConstructor { name, members } => {
+                write!(f, " Struct Constructor: {} {{", name)?;
+                for (i, member) in members.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, " {} ", member)?;
+                }
+
                 write!(f, "}}")
             }
 

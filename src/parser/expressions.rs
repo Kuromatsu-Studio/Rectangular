@@ -1,5 +1,8 @@
 use crate::{
-    ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, BinaryOp, Precedence, UnaryOp},
+    ast::{
+        ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, BinaryOp, Precedence,
+        UnaryOp,
+    },
     diagnostics::Span,
     lexer::{TType, Token},
     parser::parser::Parser,
@@ -216,7 +219,13 @@ impl Parser {
                 }
             }
             TType::Bang | TType::Minus => self.parse_unary(),
-            TType::Identifier => self.parse_identifier(),
+            TType::Identifier => {
+                if self.peek_token()?.token_type == TType::Lbrace {
+                    self.parse_struct_constructor()
+                } else {
+                    self.parse_identifier()
+                }
+            }
             TType::Lbrace => self.parse_block(),
             TType::Lbracket => self.parse_array_literal(),
             _ => {
@@ -340,6 +349,10 @@ impl Parser {
         self.expect_token(TType::Lbrace)?;
         let mut members = Vec::new();
         loop {
+            if self.current_token()?.token_type == TType::Rbrace {
+                break;
+            }
+
             let member = self.parse_param()?;
             members.push(member);
             if self.current_token()?.token_type == TType::Comma {
@@ -352,6 +365,47 @@ impl Parser {
         let end = self.last_end;
         let span = Span::new(start, end);
         Some(ASTExpr::new(ASTExprKind::Struct { members }, span))
+    }
+
+    fn parse_struct_constructor(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.end;
+        let name = self.parse_identifier()?;
+        self.expect_token(TType::Lbrace)?;
+
+        let mut members = Vec::new();
+
+        loop {
+            if self.current_token()?.token_type == TType::Rbrace {
+                break;
+            }
+
+            let member_name = self.parse_identifier()?;
+            self.expect_token(TType::Assign)?;
+            let value = self.parse_expr(Precedence::Lowest)?;
+
+            members.push(ASTConstructorMember {
+                name: Box::new(member_name),
+                val: Box::new(value),
+            });
+
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        self.expect_token(TType::Rbrace)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+
+        Some(ASTExpr::new(
+            ASTExprKind::StructConstructor {
+                name: Box::new(name),
+                members,
+            },
+            span,
+        ))
     }
 
     fn parse_literal(&mut self) -> Option<ASTExpr> {

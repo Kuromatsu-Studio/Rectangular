@@ -12,6 +12,12 @@ pub struct ASTParam {
     pub ty: Box<ASTType>,
 }
 
+#[derive(Debug)]
+pub struct ASTConstructorMember {
+    pub name: Box<ASTExpr>,
+    pub val: Box<ASTExpr>,
+}
+
 ///The kind of expression u are dealing with
 #[derive(Debug)]
 pub enum ASTExprKind {
@@ -32,6 +38,10 @@ pub enum ASTExprKind {
     },
     Struct {
         members: Vec<ASTParam>,
+    },
+    StructConstructor {
+        name: Box<ASTExpr>,
+        members: Vec<ASTConstructorMember>,
     },
     Call(Box<ASTExpr>, Vec<ASTExpr>),
     Index(Box<ASTExpr>, Box<ASTExpr>),
