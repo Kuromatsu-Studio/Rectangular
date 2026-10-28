@@ -18,7 +18,7 @@ impl Parser {
             }
 
             let op_prec = Precedence::prec(&token.token_type);
-            if op_prec < min_prec {
+            if op_prec <= min_prec {
                 break;
             }
 
@@ -207,6 +207,7 @@ impl Parser {
             | TType::True
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
+            TType::Struct => self.parse_struct_expr(),
             TType::Lparen => {
                 if self.lparen_starts_function() {
                     return self.parse_lambda();
@@ -331,6 +332,26 @@ impl Parser {
         let span = token.span;
         self.expect_token(TType::Identifier)?;
         Some(ASTExpr::new(ASTExprKind::Identifier(name), span))
+    }
+
+    fn parse_struct_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Struct)?;
+        self.expect_token(TType::Lbrace)?;
+        let mut members = Vec::new();
+        loop {
+            let member = self.parse_param()?;
+            members.push(member);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect_token(TType::Rbrace)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(ASTExprKind::Struct { members }, span))
     }
 
     fn parse_literal(&mut self) -> Option<ASTExpr> {
