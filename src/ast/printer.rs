@@ -153,7 +153,7 @@ impl ASTExpr {
                     write!(f, "Type: {}", ty_val)?;
                 }
 
-                write!(f, " {{")?;
+                write!(f, " Value: {{")?;
 
                 if let Some(init_val) = init {
                     write!(f, "{}", init_val)?;

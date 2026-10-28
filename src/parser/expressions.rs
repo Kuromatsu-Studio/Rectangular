@@ -181,7 +181,7 @@ impl Parser {
         let op = BinaryOp::new(&operator.token_type);
         let op_prec = Precedence::prec(&operator.token_type);
         let right = self.parse_expr(op_prec)?;
-        let end = self.current_token()?.span.end;
+        let end = self.last_end;
         let span = Span { start, end };
         Some(ASTExpr::new(
             ASTExprKind::Binary(Box::new(left), op, Box::new(right)),
@@ -207,7 +207,13 @@ impl Parser {
             | TType::True
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
-            TType::Lparen => self.parse_lambda(),
+            TType::Lparen => {
+                if self.lparen_starts_function() {
+                    return self.parse_lambda();
+                } else {
+                    return self.parse_grouped();
+                }
+            }
             TType::Bang | TType::Minus => self.parse_unary(),
             TType::Identifier => self.parse_identifier(),
             TType::Lbrace => self.parse_block(),
@@ -222,6 +228,13 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn parse_grouped(&mut self) -> Option<ASTExpr> {
+        self.expect_token(TType::Lparen)?;
+        let inner_expr = self.parse_expr(Precedence::Lowest)?;
+        self.expect_token(TType::Rparen)?;
+        Some(inner_expr)
     }
 
     fn parse_unary(&mut self) -> Option<ASTExpr> {
