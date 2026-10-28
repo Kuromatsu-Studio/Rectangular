@@ -86,6 +86,29 @@ impl Parser {
         }
     }
 
+    pub fn lparen_starts_function(&self) -> bool {
+        let mut depth = 0;
+        let mut i = self.current_pos;
+        while let Some(t) = self.tokens.get(i) {
+            match t.token_type {
+                TType::Lparen => depth += 1,
+                TType::Rparen => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return matches!(
+                            self.tokens.get(i + 1).map(|t| &t.token_type),
+                            Some(TType::Arrow) | Some(TType::Colon)
+                        );
+                    }
+                }
+                TType::End => return false,
+                _ => {}
+            }
+            i += 1;
+        }
+        false
+    }
+
     pub fn report(&mut self, message: String, span: Option<Span>) {
         self.corrupted = true;
         self.diagnostics
