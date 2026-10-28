@@ -1,5 +1,4 @@
-#[macro_export]
-macro_rules! test {
+macro_rules! lexer_ctest {
     ($fname:ident, $teststr:expr, $ttype:ident) => {
         #[test]
         fn $fname(){
