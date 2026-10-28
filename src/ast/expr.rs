@@ -30,6 +30,9 @@ pub enum ASTExprKind {
         ret_ty: Option<ASTType>,
         body: Box<ASTExpr>,
     },
+    Struct {
+        members: Vec<ASTParam>,
+    },
     Call(Box<ASTExpr>, Vec<ASTExpr>),
     Index(Box<ASTExpr>, Box<ASTExpr>),
     Array(Vec<ASTExpr>),

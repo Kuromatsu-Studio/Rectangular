@@ -162,6 +162,17 @@ impl ASTExpr {
                 write!(f, "}}")
             }
 
+            ASTExprKind::Struct { members } => {
+                write!(f, "Struct: {{")?;
+                for (i, member) in members.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "Member {} ", member)?;
+                }
+                write!(f, "}}")
+            }
+
             ASTExprKind::Identifier(name) => {
                 indent(f, depth)?;
                 write!(f, "Identifier({}) @ {}", name, self.span)
