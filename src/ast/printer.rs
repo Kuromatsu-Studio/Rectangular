@@ -101,7 +101,7 @@ impl fmt::Display for ASTParam {
 
 impl fmt::Display for ASTConstructorMember {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Member {}= {}", self.name.as_ref(), self.val.as_ref())
+        write!(f, "Member {} : {}", self.name.as_ref(), self.val.as_ref())
     }
 }
 
@@ -182,7 +182,8 @@ impl ASTExpr {
             }
 
             ASTExprKind::StructConstructor { name, members } => {
-                write!(f, " Struct Constructor: {} {{", name)?;
+                write!(f, " Struct Constructor: {} (", name)?;
+                indent(f, depth)?;
                 for (i, member) in members.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
@@ -190,7 +191,32 @@ impl ASTExpr {
                     write!(f, " {} ", member)?;
                 }
 
+                write!(f, ")")
+            }
+
+            ASTExprKind::Break => write!(f, "Break @{}", self.span),
+            ASTExprKind::Continue => write!(f, "Continue @{}", self.span),
+
+            ASTExprKind::IfExpr {
+                condition,
+                if_body,
+                else_body,
+            } => {
+                write!(f, "IfExpr: {{")?;
+                indent(f, depth)?;
+                write!(f, "Condition: {} ", condition)?;
+                write!(f, "Body: {} ", if_body)?;
+                if let Some(else_bod) = else_body {
+                    write!(f, "Else: {} ", else_bod)?;
+                }
                 write!(f, "}}")
+            }
+
+            ASTExprKind::WhileExpr { condition, body } => {
+                write!(f, "WhileExpr: ")?;
+                indent(f, depth)?;
+                write!(f, "Condition {} ", condition)?;
+                write!(f, "Body: {}", body)
             }
 
             ASTExprKind::Identifier(name) => {
@@ -367,20 +393,25 @@ impl ASTExpr {
 
             ASTExprKind::Return(expr) => {
                 indent(f, depth)?;
-                write!(f, "Return @ {} {{", self.span)?;
+                write!(f, "Return @ {} ", self.span)?;
                 write!(
                     f,
                     "
 "
                 )?;
-                expr.fmt_pretty(f, depth + 1)?;
-                write!(
-                    f,
-                    "
+
+                if let Some(expr_val) = expr {
+                    expr_val.fmt_pretty(f, depth + 1)?;
+                    write!(
+                        f,
+                        "
 "
-                )?;
-                indent(f, depth)?;
-                write!(f, "}}")
+                    )?;
+
+                    indent(f, depth)?;
+                }
+
+                write!(f, "")
             }
         }
     }

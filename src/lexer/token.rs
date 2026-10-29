@@ -118,6 +118,8 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::Rbracket
             | TType::Rbrace
             | TType::Return
+            | TType::Continue
+            | TType::Break
     )
 }
 

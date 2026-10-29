@@ -78,7 +78,7 @@ impl Parser {
         ))
     }
 
-    pub fn parse_bind(&mut self) -> Option<ASTExpr> {
+    fn parse_bind(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Bind)?;
         let mut names = Vec::new();
@@ -124,6 +124,67 @@ impl Parser {
             },
             span,
         ))
+    }
+
+    fn parse_if_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::If)?;
+        let condition = self.parse_expr(Precedence::Lowest)?;
+        let if_body = self.parse_block()?;
+
+        let else_body = if self.current_token()?.token_type == TType::Else {
+            self.advance();
+            let body = self.parse_block()?;
+            Some(Box::new(body))
+        } else {
+            None
+        };
+
+        let end = self.last_end;
+        let span = Span::new(start, end);
+
+        Some(ASTExpr::new(
+            ASTExprKind::IfExpr {
+                condition: Box::new(condition),
+                if_body: Box::new(if_body),
+                else_body,
+            },
+            span,
+        ))
+    }
+
+    fn parse_while_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::While)?;
+        let condition = self.parse_expr(Precedence::Lowest)?;
+        let body = self.parse_block()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(
+            ASTExprKind::WhileExpr {
+                condition: Box::new(condition),
+                body: Box::new(body),
+            },
+            span,
+        ))
+    }
+
+    fn parse_return(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Return)?;
+        if self.current_token()?.token_type == TType::Semicolon {
+            let end = self.last_end;
+            let span = Span::new(start, end);
+            Some(ASTExpr::new(ASTExprKind::Return(None), span))
+        } else {
+            let value = self.parse_expr(Precedence::Lowest)?;
+            let end = self.last_end;
+            let span = Span::new(start, end);
+            Some(ASTExpr::new(
+                ASTExprKind::Return(Some(Box::new(value))),
+                span,
+            ))
+        }
     }
 
     fn parse_array_literal(&mut self) -> Option<ASTExpr> {
@@ -216,6 +277,19 @@ impl Parser {
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
             TType::Struct => self.parse_struct_expr(),
+            TType::If => self.parse_if_expr(),
+            TType::While => self.parse_while_expr(),
+            TType::Return => self.parse_return(),
+            TType::Break => {
+                let span = self.current_token()?.span.clone();
+                self.advance();
+                Some(ASTExpr::new(ASTExprKind::Break, span))
+            }
+            TType::Continue => {
+                let span = self.current_token()?.span.clone();
+                self.advance();
+                Some(ASTExpr::new(ASTExprKind::Continue, span))
+            }
             TType::Lparen => {
                 if self.lparen_starts_function() {
                     return self.parse_lambda();
@@ -225,7 +299,7 @@ impl Parser {
             }
             TType::Bang | TType::Minus => self.parse_unary(),
             TType::Identifier => {
-                if self.peek_token()?.token_type == TType::Lbrace {
+                if self.peek_token()?.token_type == TType::Lparen {
                     self.parse_struct_constructor()
                 } else {
                     self.parse_identifier()
@@ -375,17 +449,17 @@ impl Parser {
     fn parse_struct_constructor(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.end;
         let name = self.parse_identifier()?;
-        self.expect_token(TType::Lbrace)?;
+        self.expect_token(TType::Lparen)?;
 
         let mut members = Vec::new();
 
         loop {
-            if self.current_token()?.token_type == TType::Rbrace {
+            if self.current_token()?.token_type == TType::Rparen {
                 break;
             }
 
             let member_name = self.parse_identifier()?;
-            self.expect_token(TType::Assign)?;
+            self.expect_token(TType::Colon)?;
             let value = self.parse_expr(Precedence::Lowest)?;
 
             members.push(ASTConstructorMember {
@@ -400,7 +474,7 @@ impl Parser {
             }
         }
 
-        self.expect_token(TType::Rbrace)?;
+        self.expect_token(TType::Rparen)?;
         let end = self.last_end;
         let span = Span::new(start, end);
 

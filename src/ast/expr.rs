@@ -43,11 +43,22 @@ pub enum ASTExprKind {
         name: Box<ASTExpr>,
         members: Vec<ASTConstructorMember>,
     },
+    IfExpr {
+        condition: Box<ASTExpr>,
+        if_body: Box<ASTExpr>,
+        else_body: Option<Box<ASTExpr>>,
+    },
+    WhileExpr {
+        condition: Box<ASTExpr>,
+        body: Box<ASTExpr>,
+    },
+    Break,
+    Continue,
+    Return(Option<Box<ASTExpr>>),
     Call(Box<ASTExpr>, Vec<ASTExpr>),
     Index(Box<ASTExpr>, Box<ASTExpr>),
     Array(Vec<ASTExpr>),
     Identifier(String),
-    Return(Box<ASTExpr>),
 }
 
 ///These represent the literals like a raw number

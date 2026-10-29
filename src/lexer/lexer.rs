@@ -83,7 +83,7 @@ impl<'a> Lexer<'a> {
             && ends_expression(&prev.token_type)
             && !matches!(
                 next.token_type,
-                TType::Rbrace | TType::Rparen | TType::Rbracket
+                TType::Rbrace | TType::Rparen | TType::Rbracket | TType::Else
             )
     }
 
