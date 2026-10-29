@@ -74,6 +74,12 @@ fn line_snippet_middle_line(){
     assert_eq!(diag.borrow().source_map.get_line_snippet(4), "cd");
 }
 
+#[test]
+fn line_snippet_last_line(){
+    let diag = make_diag("ab\ncd\nef");
+    assert_eq!(diag.borrow().source_map.get_line_snippet(7), "ef");
+}
+
 // compilererror tests
 #[test]
 fn report_error_goes_to_errors(){
