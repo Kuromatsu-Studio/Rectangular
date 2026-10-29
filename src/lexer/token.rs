@@ -60,6 +60,11 @@ pub enum TType {
     Return,
     Bind,
     Struct,
+    If,
+    Else,
+    Break,
+    Continue,
+    While,
 
     ///Type keywords
     I8Key,

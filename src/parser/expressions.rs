@@ -182,7 +182,12 @@ impl Parser {
         self.advance();
 
         let op = BinaryOp::new(&operator.token_type);
-        let op_prec = Precedence::prec(&operator.token_type);
+        let op_prec = if op.is_assignment() {
+            Precedence::Lowest
+        } else {
+            Precedence::prec(&operator.token_type)
+        };
+
         let right = self.parse_expr(op_prec)?;
         let end = self.last_end;
         let span = Span { start, end };

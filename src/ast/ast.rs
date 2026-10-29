@@ -69,6 +69,17 @@ impl BinaryOp {
             _ => false,
         }
     }
+
+    pub fn is_assignment(&self) -> bool {
+        matches!(
+            self,
+            BinaryOp::AddAssign
+                | BinaryOp::MulAssign
+                | BinaryOp::DivAssign
+                | BinaryOp::Assign
+                | BinaryOp::SubAssign
+        )
+    }
 }
 
 ///This represents prefix operators
