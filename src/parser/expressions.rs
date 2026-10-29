@@ -307,6 +307,8 @@ impl Parser {
             }
             TType::Lbrace => self.parse_block(),
             TType::Lbracket => self.parse_array_literal(),
+            TType::Dollar => self.parse_dollar_expr(),
+            TType::DoubleDollar => self.parse_double_dollar_expr(),
             _ => {
                 let span = token.span;
                 self.report(
@@ -317,6 +319,27 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn parse_dollar_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Dollar)?;
+        let expr = self.parse_expr(Precedence::Lowest)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(ASTExprKind::DollarExpr(Box::new(expr)), span))
+    }
+
+    fn parse_double_dollar_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::DoubleDollar)?;
+        let expr = self.parse_expr(Precedence::Lowest)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(
+            ASTExprKind::DoubleDollar(Box::new(expr)),
+            span,
+        ))
     }
 
     fn parse_grouped(&mut self) -> Option<ASTExpr> {

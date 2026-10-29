@@ -4,38 +4,40 @@ use crate::diagnostics::Span;
 pub enum TType {
     ///Operators
     Plus, //+
-    Minus,       //-
-    Asterisk,    //*
-    Slash,       // `/`
-    Dot,         //.
-    Pipe,        //|
-    Ampersand,   //&
-    Gt,          //>
-    Lt,          //<
-    Lbrace,      //{
-    Rbrace,      //}
-    Lparen,      //(
-    Rparen,      //)
-    Lbracket,    //[
-    Rbracket,    //]
-    Bang,        //`!`
-    Colon,       //:
-    Assign,      //=
-    Comma,       //,
-    BindAssign,  //:=
-    Equality,    //==
-    Neq,         //`!=`
-    AddAssign,   //+=
-    SubAssign,   //-=
-    DivAssign,   //`/=`
-    MulAssign,   //*=
-    Gte,         //>=
-    Lte,         //<=
-    FatArrow,    //=>
-    Arrow,       //->
-    DoubleColon, //::
-    Range,       //..
-    Semicolon,   //;
+    Minus,        //-
+    Asterisk,     //*
+    Slash,        // `/`
+    Dot,          //.
+    Pipe,         //|
+    Ampersand,    //&
+    Gt,           //>
+    Lt,           //<
+    Lbrace,       //{
+    Rbrace,       //}
+    Lparen,       //(
+    Rparen,       //)
+    Lbracket,     //[
+    Rbracket,     //]
+    Bang,         //`!`
+    Colon,        //:
+    Assign,       //=
+    Comma,        //,
+    BindAssign,   //:=
+    Equality,     //==
+    Neq,          //`!=`
+    AddAssign,    //+=
+    SubAssign,    //-=
+    DivAssign,    //`/=`
+    MulAssign,    //*=
+    Gte,          //>=
+    Lte,          //<=
+    FatArrow,     //=>
+    Arrow,        //->
+    DoubleColon,  //::
+    Range,        //..
+    Semicolon,    //;
+    Dollar,       //$
+    DoubleDollar, //$$
 
     ///Primitive expression tokens
     True, //true
