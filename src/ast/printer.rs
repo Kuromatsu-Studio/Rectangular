@@ -118,7 +118,7 @@ impl ASTExpr {
                 ret_ty,
                 body,
             } => {
-                indent(f, depth)?;
+                indent(f, depth + 1)?;
                 write!(f, "Lambda: ")?;
 
                 write!(f, "(")?;
@@ -139,13 +139,25 @@ impl ASTExpr {
                 write!(f, "}}")
             }
 
+            ASTExprKind::DollarExpr(expr) => {
+                write!(f, "DollarExpr: ")?;
+                indent(f, depth + 1)?;
+                expr.fmt_pretty(f, depth)
+            }
+
+            ASTExprKind::DoubleDollar(expr) => {
+                write!(f, "DoubleDollarExpr: ")?;
+                indent(f, depth + 1)?;
+                expr.fmt_pretty(f, depth)
+            }
+
             ASTExprKind::Bind {
                 mutable,
                 names,
                 ty,
                 init,
             } => {
-                indent(f, depth)?;
+                indent(f, depth + 1)?;
                 write!(f, "Bind: ")?;
 
                 write!(f, "Mutable: {} ", mutable)?;

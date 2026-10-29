@@ -52,6 +52,8 @@ pub enum ASTExprKind {
         condition: Box<ASTExpr>,
         body: Box<ASTExpr>,
     },
+    DollarExpr(Box<ASTExpr>),
+    DoubleDollar(Box<ASTExpr>),
     Break,
     Continue,
     Return(Option<Box<ASTExpr>>),
