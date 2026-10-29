@@ -89,3 +89,13 @@ fn report_error_goes_to_errors(){
     assert_eq!(diag.borrow().errors.len(), 1);
     assert_eq!(diag.borrow().warnings.len(), 0);
 }
+
+// compilerwarnings test
+#[test]
+fn report_warning_goes_to_warnings(){
+    let diag = make_diag("let x = 5");
+    diag.borrow_mut().report(CompilerError::warning("careful".to_string(), None, None));
+
+    assert_eq!(diag.borrow().warnings.len(), 1);
+    assert_eq!(diag.borrow().errors.len(), 0);
+}
