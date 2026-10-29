@@ -10,6 +10,9 @@ lexer_ctest!(identifier_starting_with_keyword, "lett", Identifier);
 // Keywords
 lexer_ctest!(keyword_true, "true", True);
 lexer_ctest!(keyword_false, "false", False);
+lexer_ctest!(keyword_return, "return",  Return);
+lexer_ctest!(keyword_continue, "continue", Continue);
+lexer_ctest!(keyword_break, "break", Break);
 
 // Type keywords
 lexer_ctest!(keyword_i8_type, "i8", I8Key);
