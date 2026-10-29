@@ -1,5 +1,7 @@
+#[macro_use] mod macro_f;
+
 use crate::common::{make_diag, make_lexer};
-use rectangular::lexer::TType;
+use rectangular::lexer::{self, TType};
 
 // Lexer Operator Tests.
 #[test]
@@ -351,5 +353,29 @@ fn bindassign(){
 
     assert_eq!(tokens[0].token_type, TType::BindAssign);
     assert_eq!(tokens[0].lexeme, ":=");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+
+#[test]
+fn dollar(){
+    let diag = make_diag("$");
+    let mut lexer = make_lexer("$", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Dollar);
+    assert_eq!(tokens[0].lexeme, "$");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+
+#[test]
+fn double_dollar(){
+    let diag = make_diag("$$");
+    let mut lexer = make_lexer("$$", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::DoubleDollar);
+    assert_eq!(tokens[0].lexeme, "$$");
     assert_eq!(tokens[1].token_type, TType::End);
 }
