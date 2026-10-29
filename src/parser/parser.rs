@@ -71,6 +71,10 @@ impl Parser {
         self.tokens.get(self.current_pos + 1)
     }
 
+    pub fn peek_nth(&self, n: usize) -> Option<&Token> {
+        self.tokens.get(self.current_pos + n)
+    }
+
     pub fn expect_token(&mut self, expected: TType) -> Option<()> {
         let token = self.current_token()?.clone();
         if token.token_type == expected {

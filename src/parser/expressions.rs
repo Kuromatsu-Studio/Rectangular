@@ -172,7 +172,10 @@ impl Parser {
     fn parse_return(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Return)?;
-        if self.current_token()?.token_type == TType::Semicolon {
+        if self.current_token()?.token_type == TType::Semicolon
+            || self.current_token()?.token_type == TType::Rbrace
+            || self.current_token()?.token_type == TType::End
+        {
             let end = self.last_end;
             let span = Span::new(start, end);
             Some(ASTExpr::new(ASTExprKind::Return(None), span))
@@ -299,7 +302,11 @@ impl Parser {
             }
             TType::Bang | TType::Minus => self.parse_unary(),
             TType::Identifier => {
-                if self.peek_token()?.token_type == TType::Lparen {
+                let tt = |n| self.peek_nth(n).map(|t| t.token_type.clone());
+                if tt(1) == Some(TType::Lparen)
+                    && tt(2) == Some(TType::Identifier)
+                    && tt(3) == Some(TType::Colon)
+                {
                     self.parse_struct_constructor()
                 } else {
                     self.parse_identifier()
@@ -360,7 +367,7 @@ impl Parser {
             );
         }
         self.advance();
-        let expr = self.parse_prefix()?;
+        let expr = self.parse_expr(Precedence::Call)?;
         let end = expr.span.end;
         let span = Span::new(start, end);
         Some(ASTExpr::new(ASTExprKind::Unary(op, Box::new(expr)), span))
@@ -470,7 +477,7 @@ impl Parser {
     }
 
     fn parse_struct_constructor(&mut self) -> Option<ASTExpr> {
-        let start = self.current_token()?.span.end;
+        let start = self.current_token()?.span.start;
         let name = self.parse_identifier()?;
         self.expect_token(TType::Lparen)?;
 

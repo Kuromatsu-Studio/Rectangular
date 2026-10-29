@@ -3,23 +3,29 @@ use crate::lexer::TType;
 ///This is represents binary operators
 #[derive(Debug)]
 pub enum BinaryOp {
-    Add,       //+
-    Minus,     //-
-    Mul,       //*
-    Div,       //`/`
-    Gt,        //>
-    Gte,       //>=
-    Lt,        //<
-    Lte,       //<=
-    Neq,       //`!=`
-    Eq,        //==
-    Modulus,   //%
-    Assign,    //=
-    AddAssign, //+=
-    SubAssign, //-=
-    MulAssign, //*=
-    DivAssign, //`/=`
-    Access,    //.
+    Add,        //+
+    Minus,      //-
+    Mul,        //*
+    Div,        //`/`
+    Gt,         //>
+    Shr,        //>>
+    Gte,        //>=
+    Lt,         //<
+    Shl,        //<<
+    Lte,        //<=
+    Neq,        //`!=`
+    Eq,         //==
+    LogicalOr,  // ||
+    LogicalAnd, // &&
+    BitOr,      // |
+    BitAnd,     // &
+    Modulus,    //%
+    Assign,     //=
+    AddAssign,  //+=
+    SubAssign,  //-=
+    MulAssign,  //*=
+    DivAssign,  //`/=`
+    Access,     //.
     Invalid,
 }
 
@@ -35,6 +41,7 @@ impl BinaryOp {
             TType::MulAssign => BinaryOp::MulAssign,
             TType::DivAssign => BinaryOp::DivAssign,
             TType::Assign => BinaryOp::Assign,
+            TType::Percent => BinaryOp::Modulus,
             TType::Gt => BinaryOp::Gt,
             TType::Lt => BinaryOp::Lt,
             TType::Gte => BinaryOp::Gte,
@@ -42,6 +49,12 @@ impl BinaryOp {
             TType::Neq => BinaryOp::Neq,
             TType::Equality => BinaryOp::Eq,
             TType::Dot => BinaryOp::Access,
+            TType::DoublePipe => BinaryOp::LogicalOr,
+            TType::DoubleAmpersand => BinaryOp::LogicalAnd,
+            TType::Pipe => BinaryOp::BitOr,
+            TType::Ampersand => BinaryOp::BitAnd,
+            TType::DoubleRAngle => BinaryOp::Shr,
+            TType::DoubleLAngle => BinaryOp::Shl,
             _ => BinaryOp::Invalid,
         }
     }
@@ -65,6 +78,13 @@ impl BinaryOp {
             | TType::Assign
             | TType::Lte
             | TType::Gte
+            | TType::Pipe
+            | TType::Ampersand
+            | TType::DoubleAmpersand
+            | TType::DoublePipe
+            | TType::DoubleRAngle
+            | TType::DoubleLAngle
+            | TType::Percent
             | TType::Dot => true,
             _ => false,
         }
@@ -111,10 +131,10 @@ pub enum Precedence {
     Comparison, // < > <= >=
     BitwiseOr,  //|
     BitwiseXor, //xor
-    BitwiseAnd, //and
-    Shift,      //shl,shr
+    BitwiseAnd, //&
+    Shift,      //<<,>>
     Term,       // + -
-    Factor,     // "* /"
+    Factor,     // "* / %"
     Call,       // .
     Primary,    //::
 }
@@ -124,10 +144,19 @@ impl Precedence {
         match ttype {
             TType::Plus | TType::Minus => Precedence::Term,
             TType::Lt | TType::Gt | TType::Lte | TType::Gte => Precedence::Comparison,
+            TType::DoublePipe => Precedence::Or,
+            TType::DoubleAmpersand => Precedence::And,
+            TType::DoubleRAngle | TType::DoubleLAngle => Precedence::Shift,
+            TType::Pipe => Precedence::BitwiseOr,
+            TType::Ampersand => Precedence::BitwiseAnd,
             TType::Neq | TType::Equality => Precedence::Equality,
-            TType::Asterisk | TType::Slash => Precedence::Factor,
+            TType::Asterisk | TType::Slash | TType::Percent => Precedence::Factor,
             TType::Dot => Precedence::Call,
-            TType::Assign | TType::AddAssign | TType::SubAssign => Precedence::Assignment,
+            TType::Assign
+            | TType::AddAssign
+            | TType::SubAssign
+            | TType::MulAssign
+            | TType::DivAssign => Precedence::Assignment,
             _ => Precedence::Lowest,
         }
     }
@@ -155,7 +184,11 @@ impl Precedence {
     fn is_right_associative(op: BinaryOp) -> bool {
         matches!(
             op,
-            BinaryOp::Assign | BinaryOp::AddAssign | BinaryOp::SubAssign
+            BinaryOp::Assign
+                | BinaryOp::AddAssign
+                | BinaryOp::SubAssign
+                | BinaryOp::MulAssign
+                | BinaryOp::DivAssign
         )
     }
 
