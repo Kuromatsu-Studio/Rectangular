@@ -57,6 +57,12 @@ impl BinaryOp {
             BinaryOp::MulAssign => "*=",
             BinaryOp::DivAssign => "/=",
             BinaryOp::Access => ".",
+            BinaryOp::LogicalOr => "||",
+            BinaryOp::LogicalAnd => "&&",
+            BinaryOp::BitAnd => "&",
+            BinaryOp::BitOr => "|",
+            BinaryOp::Shr => ">>",
+            BinaryOp::Shl => "<<",
             BinaryOp::Invalid => "<??>",
         }
     }

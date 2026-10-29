@@ -372,15 +372,33 @@ impl<'a> Lexer<'a> {
             }
             Some('|') => {
                 self.advance();
-                Token::new(TType::Pipe, "|".to_string(), Span::new(start, self.pos))
+                if let Some('|') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DoublePipe,
+                        "||".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else {
+                    Token::new(TType::Pipe, "|".to_string(), Span::new(start, self.pos))
+                }
             }
             Some('&') => {
                 self.advance();
-                Token::new(
-                    TType::Ampersand,
-                    "&".to_string(),
-                    Span::new(start, self.pos),
-                )
+                if let Some('&') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DoubleAmpersand,
+                        "&&".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else {
+                    Token::new(
+                        TType::Ampersand,
+                        "&".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                }
             }
             Some('-') => {
                 self.advance();
@@ -461,6 +479,10 @@ impl<'a> Lexer<'a> {
                     Token::new(TType::Bang, "!".to_string(), Span::new(start, self.pos))
                 }
             }
+            Some('%') => {
+                self.advance();
+                Token::new(TType::Percent, "%".to_string(), Span::new(start, self.pos))
+            }
             Some(':') => {
                 self.advance();
                 if let Some(':') = self.current_char() {
@@ -483,7 +505,14 @@ impl<'a> Lexer<'a> {
             }
             Some('>') => {
                 self.advance();
-                if let Some('=') = self.current_char() {
+                if let Some('>') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DoubleRAngle,
+                        ">>".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else if let Some('=') = self.current_char() {
                     self.advance();
                     Token::new(TType::Gte, ">=".to_string(), Span::new(start, self.pos))
                 } else {
@@ -492,7 +521,14 @@ impl<'a> Lexer<'a> {
             }
             Some('<') => {
                 self.advance();
-                if let Some('=') = self.current_char() {
+                if let Some('<') = self.current_char() {
+                    self.advance();
+                    Token::new(
+                        TType::DoubleLAngle,
+                        "<<".to_string(),
+                        Span::new(start, self.pos),
+                    )
+                } else if let Some('=') = self.current_char() {
                     self.advance();
                     Token::new(TType::Lte, "<=".to_string(), Span::new(start, self.pos))
                 } else {
