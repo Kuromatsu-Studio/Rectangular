@@ -169,6 +169,8 @@ fn pipe(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
+lexer_otest!(double_pipe, "||", DoublePipe);
+
 #[test]
 fn ampersand(){
     let diag = make_diag("&");
@@ -177,6 +179,18 @@ fn ampersand(){
 
     assert_eq!(tokens[0].token_type, TType::Ampersand);
     assert_eq!(tokens[0].lexeme, "&");
+    assert_eq!(tokens[1].token_type, TType::End);
+}
+
+
+#[test]
+fn double_ampersand(){
+    let diag = make_diag("&&");
+    let mut lexer = make_lexer("&&", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::DoubleAmpersand);
+    assert_eq!(tokens[0].lexeme, "&&");
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
@@ -379,3 +393,6 @@ fn double_dollar(){
     assert_eq!(tokens[0].lexeme, "$$");
     assert_eq!(tokens[1].token_type, TType::End);
 }
+
+lexer_otest!(double_rangle, ">>", DoubleRAngle);
+lexer_otest!(double_langle, "<<", DoubleLAngle);
