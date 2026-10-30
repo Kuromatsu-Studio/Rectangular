@@ -396,3 +396,4 @@ fn double_dollar(){
 
 lexer_otest!(double_rangle, ">>", DoubleRAngle);
 lexer_otest!(double_langle, "<<", DoubleLAngle);
+lexer_otest!(percent, "%", Percent);
