@@ -184,6 +184,19 @@ fn binary_literal_with_underscore(){
 }
 
 #[test]
+fn string_literal() {
+    let diag = make_diag(r#""this is a string.""#);
+    let mut lexer = make_lexer(r#""this is a string.""#, diag);
+    let tokens = lexer.tokenize();
+
+    println!("{:?}", tokens);
+
+    assert_eq!(tokens[0].token_type, TType::StringLiteral);
+    assert_eq!(tokens[0].lexeme, "this is a string.");
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
 fn unterminated_hex_literal(){
     let diag = make_diag("0x");
     let mut lexer = make_lexer("0x", Rc::clone(&diag));
