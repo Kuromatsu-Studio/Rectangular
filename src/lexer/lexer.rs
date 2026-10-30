@@ -39,6 +39,8 @@ impl<'a> Lexer<'a> {
             ("break".to_string(), TType::Break),
             ("continue".to_string(), TType::Continue),
             ("while".to_string(), TType::While),
+            ("type".to_string(), TType::TypeKey),
+            ("unit".to_string(), TType::UnitKey),
             ("i8".to_string(), TType::I8Key),
             ("u8".to_string(), TType::U8Key),
             ("i16".to_string(), TType::I16Key),

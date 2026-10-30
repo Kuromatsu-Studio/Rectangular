@@ -1,13 +1,19 @@
 use crate::{
-    ast::{ASTType, ASTTypeKind},
+    ast::{ASTExpr, ASTExprKind, ASTType, ASTTypeKind, Precedence},
     diagnostics::Span,
     lexer::TType,
     parser::Parser,
 };
 
 impl Parser {
+    pub fn parse_type_expr(&mut self) -> Option<ASTExpr> {
+        let ty = self.parse_type()?;
+        let span = ty.span.clone();
+        Some(ASTExpr::new(ASTExprKind::TypeExpr(Box::new(ty)), span))
+    }
+
     ///The main type sub parser
-    pub fn parse_type(&mut self) -> Option<ASTType> {
+    fn parse_type(&mut self) -> Option<ASTType> {
         let ty_token = self.current_token()?.clone();
         let span = ty_token.span.clone();
         match ty_token.token_type {
@@ -21,9 +27,17 @@ impl Parser {
             | TType::U64Key
             | TType::F32Key
             | TType::F64Key
-            | TType::BoolKey => {
+            | TType::BoolKey
+            | TType::TypeKey
+            | TType::UnitKey => {
                 self.advance();
                 Some(ASTType::basic(&ty_token))
+            }
+            TType::Identifier => {
+                let name = self.current_token()?.lexeme.clone();
+                let span = self.current_token()?.span.clone();
+                self.advance();
+                Some(ASTType::new(ASTTypeKind::Custom(name), span))
             }
             _ => {
                 self.report(
@@ -35,14 +49,18 @@ impl Parser {
         }
     }
 
-    ///Sub parser for () type
-    fn parse_unit_type(&mut self) -> Option<ASTType> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::Lparen)?;
-        let end = self.current_token()?.span.end;
-        self.expect_token(TType::Rparen)?;
-        let span = Span::new(start, end);
-        Some(ASTType::new(ASTTypeKind::Unit, span))
+    pub fn parse_type_annotation(&mut self) -> Option<ASTType> {
+        let expr = self.parse_expr(Precedence::Assignment)?;
+        let span = expr.span.clone();
+        let ty = match expr.kind {
+            ASTExprKind::TypeExpr(ty) => *ty,
+            ASTExprKind::Identifier(name) => ASTType::new(ASTTypeKind::Custom(name), span),
+            kind => ASTType::new(
+                ASTTypeKind::Expr(Box::new(ASTExpr::new(kind, span.clone()))),
+                span,
+            ),
+        };
+        Some(ty)
     }
 
     /*fn parse_array_type(&mut self) -> Option<ASTType> {

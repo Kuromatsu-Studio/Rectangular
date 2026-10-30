@@ -1,10 +1,7 @@
 use crate::{
-    ast::{
-        ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, BinaryOp, Precedence,
-        UnaryOp,
-    },
+    ast::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, BinaryOp, Precedence, UnaryOp},
     diagnostics::Span,
-    lexer::{TType, Token},
+    lexer::TType,
     parser::parser::Parser,
 };
 
@@ -34,7 +31,7 @@ impl Parser {
     fn parse_param(&mut self) -> Option<ASTParam> {
         let name = self.parse_identifier()?;
         self.expect_token(TType::Colon)?;
-        let ty = self.parse_type()?;
+        let ty = self.parse_type_annotation()?;
         Some(ASTParam {
             name: Box::new(name),
             ty: Box::new(ty),
@@ -46,8 +43,13 @@ impl Parser {
         self.expect_token(TType::Lparen)?;
         let mut params = Vec::new();
         loop {
+            if self.current_token()?.token_type == TType::Rparen {
+                break;
+            }
+
             let param = self.parse_param()?;
             params.push(param);
+
             if self.current_token()?.token_type == TType::Comma {
                 self.advance();
             } else {
@@ -58,7 +60,7 @@ impl Parser {
 
         let ret_ty = if self.current_token()?.token_type == TType::Colon {
             self.advance();
-            Some(self.parse_type()?)
+            Some(self.parse_type_annotation()?)
         } else {
             None
         };
@@ -95,7 +97,7 @@ impl Parser {
 
         let ty = if self.current_token()?.token_type == TType::Colon {
             self.advance();
-            Some(self.parse_type()?)
+            Some(self.parse_type_annotation()?)
         } else {
             None
         };
@@ -320,6 +322,19 @@ impl Parser {
             TType::Lbracket => self.parse_array_literal(),
             TType::Dollar => self.parse_dollar_expr(),
             TType::DoubleDollar => self.parse_double_dollar_expr(),
+            TType::I8Key
+            | TType::U8Key
+            | TType::I16Key
+            | TType::U16Key
+            | TType::I32Key
+            | TType::U32Key
+            | TType::I64Key
+            | TType::U64Key
+            | TType::F32Key
+            | TType::F64Key
+            | TType::BoolKey
+            | TType::TypeKey
+            | TType::UnitKey => self.parse_type_expr(),
             _ => {
                 let span = token.span;
                 self.report(
