@@ -102,7 +102,9 @@ impl fmt::Display for ASTType {
             ASTTypeKind::F32 => write!(f, "f32"),
             ASTTypeKind::F64 => write!(f, "f64"),
             ASTTypeKind::Bool => write!(f, "bool"),
-            ASTTypeKind::Unit => write!(f, "()"),
+            ASTTypeKind::Unit => write!(f, "unit"),
+            ASTTypeKind::Type => write!(f, "type"),
+            ASTTypeKind::Expr(inner) => write!(f, "{}", inner),
             ASTTypeKind::None => write!(f, "<?>"),
             ASTTypeKind::Custom(name) => write!(f, "{}", name),
         }
@@ -129,6 +131,8 @@ impl ASTExpr {
                 write!(f, "Literal({}) @ {}", lit, self.span)
             }
 
+            ASTExprKind::TypeExpr(ty) => write!(f, "Type Expr: {}", ty),
+
             ASTExprKind::Lambda {
                 params,
                 ret_ty,
@@ -147,10 +151,10 @@ impl ASTExpr {
                 write!(f, ")")?;
 
                 if let Some(ty) = ret_ty {
-                    write!(f, " -> {}", ty)?;
+                    write!(f, " Return_Type:  {}", ty)?;
                 }
 
-                write!(f, " {{")?;
+                write!(f, " -> Body: {{")?;
                 write!(f, "{}", body)?;
                 write!(f, "}}")
             }

@@ -89,6 +89,8 @@ pub enum TType {
     F32Key,
     F64Key,
     BoolKey,
+    TypeKey,
+    UnitKey,
 
     ///EOF
     End,
@@ -129,6 +131,7 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::F32Key
             | TType::F64Key
             | TType::BoolKey
+            | TType::TypeKey
             | TType::Rparen
             | TType::Rbracket
             | TType::Rbrace

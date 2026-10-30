@@ -1,4 +1,5 @@
 use crate::{
+    ast::ASTExpr,
     diagnostics::Span,
     lexer::{TType, Token},
 };
@@ -17,14 +18,16 @@ pub enum ASTTypeKind {
     F64,
     Bool,
     Custom(String),
+    Expr(Box<ASTExpr>), // any expression that evaluates to a type, like List(i32)
     Unit,
+    Type,
     None,
 }
 
 #[derive(Debug)]
 pub struct ASTType {
     pub kind: ASTTypeKind,
-    span: Span,
+    pub span: Span,
 }
 
 impl ASTType {
@@ -46,7 +49,9 @@ impl ASTType {
             | TType::F32Key
             | TType::F64Key
             | TType::BoolKey
-            | TType::Lparen => true,
+            | TType::TypeKey
+            | TType::Identifier
+            | TType::UnitKey => true,
             _ => false,
         }
     }
@@ -64,6 +69,8 @@ impl ASTType {
             TType::BoolKey => ASTTypeKind::Bool,
             TType::F32Key => ASTTypeKind::F32,
             TType::F64Key => ASTTypeKind::F64,
+            TType::TypeKey => ASTTypeKind::Type,
+            TType::UnitKey => ASTTypeKind::Unit,
             _ => ASTTypeKind::None,
         };
 
