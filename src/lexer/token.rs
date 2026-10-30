@@ -46,20 +46,24 @@ pub enum TType {
 
     ///Primitive expression tokens
     True, //true
-    False,        //false
-    Identifier,   //a
-    I8Literal,    //7i8
-    U8Literal,    //7u8
-    I16Literal,   //7i16
-    U16Literal,   //7u16
-    I32Literal,   //7i32
-    U32Literal,   //7u32
-    I64Literal,   //7i64
-    U64Literal,   //8u64
-    F32Literal,   //8.7f32
-    F64Literal,   //8.7f64
-    IntLiteral,   //8
-    FloatLiteral, //8.7
+    False,         //false
+    Identifier,    //a
+    I8Literal,     //7i8
+    U8Literal,     //7u8
+    I16Literal,    //7i16
+    U16Literal,    //7u16
+    I32Literal,    //7i32
+    U32Literal,    //7u32
+    I64Literal,    //7i64
+    U64Literal,    //8u64
+    F32Literal,    //8.7f32
+    F64Literal,    //8.7f64
+    IntLiteral,    //8
+    FloatLiteral,  //8.7
+    StringLiteral, //""
+    Char8Literal,
+    Char16Literal,
+    Char32Literal,
 
     ///keywords
     Macro,
@@ -108,6 +112,10 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::U64Literal
             | TType::F32Literal
             | TType::F64Literal
+            | TType::StringLiteral
+            | TType::Char8Literal
+            | TType::Char16Literal
+            | TType::Char32Literal
             | TType::True
             | TType::False
             | TType::I8Key
