@@ -456,6 +456,8 @@ impl<'a> Lexer<'a> {
     fn read_char(&mut self, start: usize) -> Token {
         self.advance(); // opening quote
 
+        let mut bad_escape = false;
+
         let ch = match self.current_char() {
             None | Some('\n') => {
                 self.report(
@@ -475,8 +477,10 @@ impl<'a> Lexer<'a> {
             Some('\\') => {
                 let esc_start = self.pos;
                 self.advance();
-                // the error was already reported, use a placeholder and keep going
-                self.read_escape(esc_start).unwrap_or('\u{FFFD}')
+                self.read_escape(esc_start).unwrap_or_else(|| {
+                    bad_escape = true;
+                    '\u{FFFD}'
+                })
             }
             Some(c) => {
                 self.advance();
@@ -487,11 +491,6 @@ impl<'a> Lexer<'a> {
         if self.current_char() == Some('\'') {
             self.advance();
         } else {
-            self.report(
-                "Character literal must hold exactly one character".to_string(),
-                Some(Span::new(start, self.pos)),
-            );
-            // recover, skip to the closing quote on this line, if there is one
             while let Some(c) = self.current_char() {
                 if c == '\n' {
                     break;
@@ -501,6 +500,10 @@ impl<'a> Lexer<'a> {
                     break;
                 }
             }
+            self.report(
+                "Character literal must hold exactly one character".to_string(),
+                Some(Span::new(start, self.pos)),
+            );
             return Token::new(TType::Illegal, ch.to_string(), Span::new(start, self.pos));
         }
 
@@ -514,6 +517,10 @@ impl<'a> Lexer<'a> {
         }
         let suffix = self.src[suffix_start..self.pos].to_string();
         let span = Span::new(start, self.pos);
+
+        if bad_escape {
+            return Token::new(TType::Illegal, ch.to_string(), span);
+        }
 
         let ttype = match suffix.as_str() {
             "" | "c8" => {

@@ -77,6 +77,10 @@ pub enum ASTExprLiteral {
     F32(f32),
     F64(f64),
     Bool(bool),
+    Str(String),
+    Char8(u8),
+    Char16(u16),
+    Char32(char),
 }
 
 ///The overall expression structure
