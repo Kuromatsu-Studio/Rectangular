@@ -341,6 +341,212 @@ impl<'a> Lexer<'a> {
         )
     }
 
+    fn read_escape(&mut self, esc_start: usize) -> Option<char> {
+        let c = self.current_char()?; // EOF, the caller reports it
+        if c == '\n' {
+            // a backslash at end of line, don't swallow the newline
+            self.report(
+                "Unfinished escape sequence".to_string(),
+                Some(Span::new(esc_start, self.pos)),
+            );
+            return None;
+        }
+        self.advance();
+        match c {
+            'n' => Some('\n'),
+            't' => Some('\t'),
+            'r' => Some('\r'),
+            '0' => Some('\0'),
+            '\\' => Some('\\'),
+            '"' => Some('"'),
+            '\'' => Some('\''),
+            'u' => self.read_unicode_escape(esc_start),
+            other => {
+                self.report(
+                    format!("Unknown escape sequence: '\\{}'", other),
+                    Some(Span::new(esc_start, self.pos)),
+                );
+                None
+            }
+        }
+    }
+
+    fn read_unicode_escape(&mut self, esc_start: usize) -> Option<char> {
+        if self.current_char() != Some('{') {
+            self.report(
+                "Expected '{' after '\\u'".to_string(),
+                Some(Span::new(esc_start, self.pos)),
+            );
+            return None;
+        }
+        self.advance();
+
+        let mut hex = String::new();
+        while let Some(c) = self.current_char() {
+            if c.is_ascii_hexdigit() {
+                hex.push(c);
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        // anything other than '}' here (a quote, a newline, junk) stops the scan
+        // without consuming it, so the string can still find its own end
+        if self.current_char() != Some('}') {
+            self.report(
+                "Invalid unicode escape: expected hex digits followed by '}'".to_string(),
+                Some(Span::new(esc_start, self.pos)),
+            );
+            return None;
+        }
+        self.advance();
+
+        if hex.is_empty() || hex.len() > 6 {
+            self.report(
+                "Invalid unicode escape: expected 1 to 6 hex digits".to_string(),
+                Some(Span::new(esc_start, self.pos)),
+            );
+            return None;
+        }
+
+        match u32::from_str_radix(&hex, 16).ok().and_then(char::from_u32) {
+            Some(c) => Some(c),
+            None => {
+                self.report(
+                    format!("Invalid unicode codepoint: U+{}", hex),
+                    Some(Span::new(esc_start, self.pos)),
+                );
+                None
+            }
+        }
+    }
+
+    fn read_string(&mut self, start: usize) -> Token {
+        self.advance(); // opening quote
+        let mut value = String::new();
+        loop {
+            match self.current_char() {
+                Some('"') => {
+                    self.advance();
+                    return Token::new(TType::StringLiteral, value, Span::new(start, self.pos));
+                }
+                Some('\\') => {
+                    let esc_start = self.pos;
+                    self.advance();
+                    if let Some(c) = self.read_escape(esc_start) {
+                        value.push(c);
+                    }
+                }
+                Some('\n') | None => {
+                    self.report(
+                        "Unterminated string literal".to_string(),
+                        Some(Span::new(start, start + 1)),
+                    );
+                    return Token::new(TType::Illegal, value, Span::new(start, self.pos));
+                }
+                Some(c) => {
+                    value.push(c);
+                    self.advance();
+                }
+            }
+        }
+    }
+
+    fn read_char(&mut self, start: usize) -> Token {
+        self.advance(); // opening quote
+
+        let ch = match self.current_char() {
+            None | Some('\n') => {
+                self.report(
+                    "Unterminated character literal".to_string(),
+                    Some(Span::new(start, start + 1)),
+                );
+                return Token::new(TType::Illegal, String::new(), Span::new(start, self.pos));
+            }
+            Some('\'') => {
+                self.advance();
+                self.report(
+                    "Empty character literal".to_string(),
+                    Some(Span::new(start, self.pos)),
+                );
+                return Token::new(TType::Illegal, String::new(), Span::new(start, self.pos));
+            }
+            Some('\\') => {
+                let esc_start = self.pos;
+                self.advance();
+                // the error was already reported, use a placeholder and keep going
+                self.read_escape(esc_start).unwrap_or('\u{FFFD}')
+            }
+            Some(c) => {
+                self.advance();
+                c
+            }
+        };
+
+        if self.current_char() == Some('\'') {
+            self.advance();
+        } else {
+            self.report(
+                "Character literal must hold exactly one character".to_string(),
+                Some(Span::new(start, self.pos)),
+            );
+            // recover, skip to the closing quote on this line, if there is one
+            while let Some(c) = self.current_char() {
+                if c == '\n' {
+                    break;
+                }
+                self.advance();
+                if c == '\'' {
+                    break;
+                }
+            }
+            return Token::new(TType::Illegal, ch.to_string(), Span::new(start, self.pos));
+        }
+
+        let suffix_start = self.pos;
+        while let Some(c) = self.current_char() {
+            if c.is_ascii_alphanumeric() {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        let suffix = self.src[suffix_start..self.pos].to_string();
+        let span = Span::new(start, self.pos);
+
+        let ttype = match suffix.as_str() {
+            "" | "c8" => {
+                if !ch.is_ascii() {
+                    self.report(
+                    format!("Character '{}' does not fit in c8 (the default); use the c16 or c32 suffix", ch),
+                    Some(span.clone()),
+                );
+                }
+                TType::Char8Literal
+            }
+            "c16" => {
+                if ch.len_utf16() != 1 {
+                    self.report(
+                        format!("Character '{}' does not fit in c16; use the c32 suffix", ch),
+                        Some(span.clone()),
+                    );
+                }
+                TType::Char16Literal
+            }
+            "c32" => TType::Char32Literal,
+            _ => {
+                self.report(
+                    format!("Unknown character suffix '{}'", suffix),
+                    Some(span.clone()),
+                );
+                TType::Illegal
+            }
+        };
+
+        Token::new(ttype, ch.to_string(), span)
+    }
+
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let start = self.pos;
@@ -576,6 +782,8 @@ impl<'a> Lexer<'a> {
                     Token::new(TType::Assign, "=".to_string(), Span::new(start, self.pos))
                 }
             }
+            Some('"') => self.read_string(start),
+            Some('\'') => self.read_char(start),
             None => Token::new(TType::End, "".to_string(), Span::new(start, self.pos)),
             Some(ch) => {
                 let span = Span {
