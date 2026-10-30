@@ -33,6 +33,16 @@ impl fmt::Display for ASTExprLiteral {
             ASTExprLiteral::F32(v) => write!(f, "{}f32", v),
             ASTExprLiteral::F64(v) => write!(f, "{}f64", v),
             ASTExprLiteral::Bool(v) => write!(f, "{}", v),
+            ASTExprLiteral::Str(v) => write!(f, "{:?}", v),
+            ASTExprLiteral::Char8(v) => write!(f, "{:?}c8", *v as char),
+            ASTExprLiteral::Char16(v) => {
+                write!(
+                    f,
+                    "{:?}c16",
+                    char::from_u32(*v as u32).unwrap_or('\u{FFFD}')
+                )
+            }
+            ASTExprLiteral::Char32(v) => write!(f, "{:?}c32", v),
         }
     }
 }

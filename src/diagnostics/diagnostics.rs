@@ -78,10 +78,15 @@ impl Diagnostics {
 
         if let Some(span) = &error.span {
             let (line, col) = self.source_map.get_line_col(span.start);
-            let length = span.length().max(1);
             let line_num_str = line.to_string();
             let padding = " ".repeat(line_num_str.len());
             let line_snippet = self.source_map.get_line_snippet(span.start);
+            let line_start = self.source_map.line_starts[line - 1];
+            let line_end = line_start + line_snippet.len();
+            let length = self
+                .source_map
+                .char_count(span.start, span.end.min(line_end))
+                .max(1);
 
             println!(
                 "{}:{}:{}: {}:{}",
