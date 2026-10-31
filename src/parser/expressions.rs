@@ -1,5 +1,8 @@
 use crate::{
-    ast::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, BinaryOp, Precedence, UnaryOp},
+    ast::{
+        ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, ASTType, BinaryOp, Precedence,
+        UnaryOp,
+    },
     diagnostics::Span,
     lexer::TType,
     parser::parser::Parser,
@@ -322,6 +325,7 @@ impl Parser {
             TType::Lbracket => self.parse_array_literal(),
             TType::Dollar => self.parse_dollar_expr(),
             TType::DoubleDollar => self.parse_double_dollar_expr(),
+            TType::Ampersand => self.parse_address_of_expr(),
             TType::I8Key
             | TType::U8Key
             | TType::I16Key
@@ -336,6 +340,16 @@ impl Parser {
             | TType::TypeKey
             | TType::UnitKey
             | TType::Asterisk => self.parse_type_expr(),
+            TType::DoubleAmpersand => {
+                self.report(
+                    "'&&' is the logical-and operator and can't start an expression; \
+         write '& &x' to take an address twice"
+                        .to_string(),
+                    Some(token.span.clone()),
+                );
+                self.advance();
+                None
+            }
             _ => {
                 let span = token.span;
                 self.report(
@@ -367,6 +381,22 @@ impl Parser {
             ASTExprKind::DoubleDollar(Box::new(expr)),
             span,
         ))
+    }
+
+    fn parse_address_of_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Ampersand)?;
+        if self.operand_missing() {
+            self.report(
+                "expected an operand after '&'".to_string(),
+                Some(Span::new(start, self.last_end)),
+            );
+            return None;
+        }
+        let inner = self.parse_expr(Precedence::Lowest)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(ASTExprKind::AddressOf(Box::new(inner)), span))
     }
 
     fn parse_grouped(&mut self) -> Option<ASTExpr> {

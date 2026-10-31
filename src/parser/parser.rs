@@ -113,6 +113,23 @@ impl Parser {
         false
     }
 
+    pub fn operand_missing(&self) -> bool {
+        matches!(
+            self.current_token().map(|t| &t.token_type),
+            Some(
+                TType::End
+                    | TType::Semicolon
+                    | TType::Assign
+                    | TType::BindAssign
+                    | TType::Comma
+                    | TType::Rparen
+                    | TType::Rbrace
+                    | TType::Rbracket
+                    | TType::Arrow
+            ) | None
+        )
+    }
+
     pub fn report(&mut self, message: String, span: Option<Span>) {
         self.corrupted = true;
         self.diagnostics

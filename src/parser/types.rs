@@ -42,19 +42,7 @@ impl Parser {
             TType::Asterisk => {
                 let start = self.current_token()?.span.start;
                 self.advance();
-                let next = self.current_token()?.token_type.clone();
-                if matches!(
-                    next,
-                    TType::End
-                        | TType::Semicolon
-                        | TType::Assign
-                        | TType::BindAssign
-                        | TType::Comma
-                        | TType::Rparen
-                        | TType::Rbrace
-                        | TType::Rbracket
-                        | TType::Arrow
-                ) {
+                if self.operand_missing() {
                     self.report(
                         "expected a type after '*'".to_string(),
                         Some(Span::new(start, self.last_end)),
