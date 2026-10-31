@@ -5,7 +5,7 @@ macro_rules! lexer_ctest {
             let diag = make_diag($teststr);
             let mut lexer = make_lexer($teststr, diag);
             let tokens = lexer.tokenize();
-
+            println!("{:?}", tokens);
             assert_eq!(tokens[0].token_type, TType::$ttype);
             assert_eq!(tokens[0].lexeme, $teststr);
             assert_eq!(tokens[2].token_type, TType::End);
