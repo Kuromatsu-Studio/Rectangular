@@ -52,6 +52,7 @@ pub enum ASTExprKind {
         condition: Box<ASTExpr>,
         body: Box<ASTExpr>,
     },
+    AddressOf(Box<ASTExpr>),
     TypeExpr(Box<ASTType>),
     DollarExpr(Box<ASTExpr>),
     DoubleDollar(Box<ASTExpr>),

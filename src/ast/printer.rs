@@ -132,6 +132,8 @@ impl ASTExpr {
                 write!(f, "Literal({}) @ {}", lit, self.span)
             }
 
+            ASTExprKind::AddressOf(inner) => write!(f, "AddressOf: {}", inner),
+
             ASTExprKind::TypeExpr(ty) => write!(f, "Type Expr: {}", ty),
 
             ASTExprKind::Lambda {
