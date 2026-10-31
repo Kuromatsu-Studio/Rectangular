@@ -39,6 +39,33 @@ impl Parser {
                 self.advance();
                 Some(ASTType::new(ASTTypeKind::Custom(name), span))
             }
+            TType::Asterisk => {
+                let start = self.current_token()?.span.start;
+                self.advance();
+                let next = self.current_token()?.token_type.clone();
+                if matches!(
+                    next,
+                    TType::End
+                        | TType::Semicolon
+                        | TType::Assign
+                        | TType::BindAssign
+                        | TType::Comma
+                        | TType::Rparen
+                        | TType::Rbrace
+                        | TType::Rbracket
+                        | TType::Arrow
+                ) {
+                    self.report(
+                        "expected a type after '*'".to_string(),
+                        Some(Span::new(start, self.last_end)),
+                    );
+                    return None;
+                }
+                let inner = Self::expr_to_type(self.parse_expr(Precedence::Call)?);
+                let end = self.last_end;
+                let span = Span::new(start, end);
+                Some(ASTType::new(ASTTypeKind::Pointer(Box::new(inner)), span))
+            }
             _ => {
                 self.report(
                     format!("Invalid type token {:?}", ty_token.token_type),
@@ -50,17 +77,19 @@ impl Parser {
     }
 
     pub fn parse_type_annotation(&mut self) -> Option<ASTType> {
-        let expr = self.parse_expr(Precedence::Assignment)?;
+        Some(Self::expr_to_type(self.parse_expr(Precedence::Assignment)?))
+    }
+
+    fn expr_to_type(expr: ASTExpr) -> ASTType {
         let span = expr.span.clone();
-        let ty = match expr.kind {
+        match expr.kind {
             ASTExprKind::TypeExpr(ty) => *ty,
             ASTExprKind::Identifier(name) => ASTType::new(ASTTypeKind::Custom(name), span),
             kind => ASTType::new(
                 ASTTypeKind::Expr(Box::new(ASTExpr::new(kind, span.clone()))),
                 span,
             ),
-        };
-        Some(ty)
+        }
     }
 
     /*fn parse_array_type(&mut self) -> Option<ASTType> {

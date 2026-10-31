@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, write};
 
 use crate::ast::ast::{BinaryOp, UnaryOp};
 use crate::ast::{
@@ -105,6 +105,7 @@ impl fmt::Display for ASTType {
             ASTTypeKind::Unit => write!(f, "unit"),
             ASTTypeKind::Type => write!(f, "type"),
             ASTTypeKind::Expr(inner) => write!(f, "{}", inner),
+            ASTTypeKind::Pointer(inner) => write!(f, "*{}", inner),
             ASTTypeKind::None => write!(f, "<?>"),
             ASTTypeKind::Custom(name) => write!(f, "{}", name),
         }
