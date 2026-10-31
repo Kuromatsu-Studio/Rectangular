@@ -197,6 +197,18 @@ fn string_literal() {
 }
 
 #[test]
+fn char8_literal() {
+    let diag = make_diag("'a'");
+    let mut lexer = make_lexer("'a'", diag);
+    let tokens = lexer.tokenize();
+
+    println!("{:?}", tokens);
+
+    assert_eq!(tokens[0].token_type, TType::Char8Literal);
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
 fn unterminated_hex_literal(){
     let diag = make_diag("0x");
     let mut lexer = make_lexer("0x", Rc::clone(&diag));
