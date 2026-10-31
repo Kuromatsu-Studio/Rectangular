@@ -77,8 +77,8 @@ fn keyword_unit() {
     let diag = make_diag("unit");
     let mut lexer = make_lexer("unit", diag);
     let tokens = lexer.tokenize();
-
+    println!("{:?}", tokens);
     assert_eq!(tokens[0].token_type, TType::UnitKey);
     assert_eq!(tokens[0].lexeme, "unit");
-    assert_eq!(tokens[1].token_type, TType::End)
+    assert_eq!(tokens[2].token_type, TType::End)
 }

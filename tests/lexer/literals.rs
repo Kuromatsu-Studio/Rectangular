@@ -208,6 +208,29 @@ fn char8_literal() {
     assert_eq!(tokens[2].token_type, TType::End);
 }
 
+
+#[test]
+fn char32_literal() {
+    let diag = make_diag("'🚀'c32");
+    let mut lexer = make_lexer("'🚀'c32", diag);
+    let tokens = lexer.tokenize();
+
+    println!("{:?}", tokens);
+
+    assert_eq!(tokens[0].token_type, TType::Char32Literal);
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
+fn char16_literal() {
+    let diag = make_diag("'a'c16");
+    let mut lexer = make_lexer("'a'c16", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Char16Literal);
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
 #[test]
 fn unterminated_hex_literal(){
     let diag = make_diag("0x");
