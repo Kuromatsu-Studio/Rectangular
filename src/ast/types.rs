@@ -19,6 +19,7 @@ pub enum ASTTypeKind {
     Bool,
     Custom(String),
     Expr(Box<ASTExpr>), // any expression that evaluates to a type, like List(i32)
+    Pointer(Box<ASTType>),
     Unit,
     Type,
     None,
@@ -50,6 +51,7 @@ impl ASTType {
             | TType::F64Key
             | TType::BoolKey
             | TType::TypeKey
+            | TType::Asterisk
             | TType::Identifier
             | TType::UnitKey => true,
             _ => false,

@@ -132,6 +132,7 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::F64Key
             | TType::BoolKey
             | TType::TypeKey
+            | TType::UnitKey
             | TType::Rparen
             | TType::Rbracket
             | TType::Rbrace

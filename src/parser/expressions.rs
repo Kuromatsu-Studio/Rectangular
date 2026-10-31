@@ -334,7 +334,8 @@ impl Parser {
             | TType::F64Key
             | TType::BoolKey
             | TType::TypeKey
-            | TType::UnitKey => self.parse_type_expr(),
+            | TType::UnitKey
+            | TType::Asterisk => self.parse_type_expr(),
             _ => {
                 let span = token.span;
                 self.report(
