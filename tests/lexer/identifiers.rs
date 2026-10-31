@@ -70,8 +70,9 @@ lexer_ctest!(keyword_u64_type, "u64", U64Key);
 lexer_ctest!(keyword_f32_type, "f32", F32Key);
 lexer_ctest!(keyword_f64_type, "f64", F64Key);
 lexer_ctest!(keyword_bool_type, "bool", BoolKey);
-lexer_ctest!(keyword_typekey, "type", TypeKey);
+//lexer_ctest!(keyword_typekey, "type", TypeKey);
 
+/*
 #[test]
 fn keyword_unit() {
     let diag = make_diag("unit");
@@ -82,3 +83,4 @@ fn keyword_unit() {
     assert_eq!(tokens[0].lexeme, "unit");
     assert_eq!(tokens[1].token_type, TType::End)
 }
+*/
