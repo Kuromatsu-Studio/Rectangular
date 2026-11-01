@@ -8,6 +8,7 @@ pub enum TType {
     Asterisk,        //*
     Slash,           // `/`
     Dot,             //.
+    DotStar,         //.*
     Pipe,            //|
     DoublePipe,      //||
     Ampersand,       //&
@@ -136,6 +137,7 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::Rparen
             | TType::Rbracket
             | TType::Rbrace
+            | TType::DotStar
             | TType::Return
             | TType::Continue
             | TType::Break
