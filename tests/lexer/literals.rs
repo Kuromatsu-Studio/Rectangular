@@ -253,6 +253,28 @@ fn empty_char_literal() {
 }
 
 
+// out of bounds char tests
+#[test]
+fn outofbounds_char8() {
+    let diag = make_diag("'🚀'");
+    let mut lexer = make_lexer("'🚀'", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+#[test]
+fn outofbounds_char16() {
+    let diag = make_diag("'🚀'c16");
+    let mut lexer = make_lexer("'🚀'c16", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+// end 
+
 #[test]
 fn multichars_char_literal() {
     let diag = make_diag("'a b'");
