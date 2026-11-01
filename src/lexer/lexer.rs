@@ -85,7 +85,7 @@ impl<'a> Lexer<'a> {
             && ends_expression(&prev.token_type)
             && !matches!(
                 next.token_type,
-                TType::Rbrace | TType::Rparen | TType::Rbracket | TType::Else
+                TType::Rbrace | TType::Rparen | TType::DotStar | TType::Rbracket | TType::Else
             )
     }
 
@@ -110,7 +110,6 @@ impl<'a> Lexer<'a> {
         self.advance(); // first '/'
 
         if self.current_char() == Some('/') {
-            // line comment: stop *before* the newline so step 2 still sees it
             while let Some(c) = self.current_char() {
                 if c == '\n' {
                     break;
@@ -581,6 +580,9 @@ impl<'a> Lexer<'a> {
                 if let Some('.') = self.current_char() {
                     self.advance();
                     Token::new(TType::Range, "..".to_string(), Span::new(start, self.pos))
+                } else if let Some('*') = self.current_char() {
+                    self.advance();
+                    Token::new(TType::DotStar, ".*".to_string(), Span::new(start, self.pos))
                 } else {
                     Token::new(TType::Dot, ".".to_string(), Span::new(start, self.pos))
                 }

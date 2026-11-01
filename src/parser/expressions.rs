@@ -1,8 +1,5 @@
 use crate::{
-    ast::{
-        ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, ASTType, BinaryOp, Precedence,
-        UnaryOp,
-    },
+    ast::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, BinaryOp, Precedence, UnaryOp},
     diagnostics::Span,
     lexer::TType,
     parser::parser::Parser,
@@ -426,7 +423,7 @@ impl Parser {
     fn parse_prefix_with_postfix(&mut self) -> Option<ASTExpr> {
         let mut expr = self.parse_prefix()?;
         let valid_postfix = |t: TType| match t {
-            TType::Lparen | TType::Lbracket => true,
+            TType::Lparen | TType::Lbracket | TType::DotStar => true,
             _ => false,
         };
         while let Some(token) = self.current_token() {
@@ -448,11 +445,20 @@ impl Parser {
         match token.token_type {
             TType::Lparen => self.parse_call(left),
             TType::Lbracket => self.parse_index(left),
+            TType::DotStar => self.parse_dereference(left),
             _ => {
                 self.report("Invalid postfix expression".to_string(), Some(span));
                 None
             }
         }
+    }
+
+    fn parse_dereference(&mut self, left: ASTExpr) -> Option<ASTExpr> {
+        let start = left.span.start;
+        self.expect_token(TType::DotStar)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(ASTExprKind::Dereference(Box::new(left)), span))
     }
 
     fn parse_index(&mut self, left: ASTExpr) -> Option<ASTExpr> {
