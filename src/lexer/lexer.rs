@@ -529,9 +529,11 @@ impl<'a> Lexer<'a> {
                     self.report(
                     format!("Character '{}' does not fit in c8 (the default); use the c16 or c32 suffix", ch),
                     Some(span.clone()),
-                );
-                }
-                TType::Char8Literal
+                    );
+
+                    TType::Illegal
+
+                } else { TType::Char8Literal }
             }
             "c16" => {
                 if ch.len_utf16() != 1 {
@@ -539,8 +541,10 @@ impl<'a> Lexer<'a> {
                         format!("Character '{}' does not fit in c16; use the c32 suffix", ch),
                         Some(span.clone()),
                     );
-                }
-                TType::Char16Literal
+
+                    TType::Illegal
+
+                } else { TType::Char16Literal }
             }
             "c32" => TType::Char32Literal,
             _ => {
