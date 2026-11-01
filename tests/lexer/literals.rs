@@ -232,6 +232,38 @@ fn char16_literal() {
 }
 
 #[test]
+fn unterminated_char_literal() {
+    let diag = make_diag("'a");
+    let mut lexer = make_lexer("'a", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+
+#[test]
+fn empty_char_literal() {
+    let diag = make_diag("''");
+    let mut lexer = make_lexer("''", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+
+#[test]
+fn multichars_char_literal() {
+    let diag = make_diag("'a b'");
+    let mut lexer = make_lexer("'a b'", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+#[test]
 fn unterminated_hex_literal(){
     let diag = make_diag("0x");
     let mut lexer = make_lexer("0x", Rc::clone(&diag));
