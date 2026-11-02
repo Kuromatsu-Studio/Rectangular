@@ -382,7 +382,6 @@ fn dollar(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
-
 #[test]
 fn double_dollar(){
     let diag = make_diag("$$");
@@ -394,7 +393,17 @@ fn double_dollar(){
     assert_eq!(tokens[1].token_type, TType::End);
 }
 
+#[test]
+fn dotstar(){
+    let diag = make_diag(".*");
+    let mut lexer = make_lexer(".*", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::DotStar);
+    assert_eq!(tokens[0].lexeme, ".*");
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
 lexer_otest!(double_rangle, ">>", DoubleRAngle);
 lexer_otest!(double_langle, "<<", DoubleLAngle);
 lexer_otest!(percent, "%", Percent);
-lexer_otest!(dotstar, ".*", DotStar);
