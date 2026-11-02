@@ -265,6 +265,16 @@ fn outofbounds_char8() {
 }
 
 #[test]
+fn outofbounds_char8_with_suffix() {
+    let diag = make_diag("'🚀'c8");
+    let mut lexer = make_lexer("'🚀'c8", Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
+
+#[test]
 fn outofbounds_char16() {
     let diag = make_diag("'🚀'c16");
     let mut lexer = make_lexer("'🚀'c16", Rc::clone(&diag));
