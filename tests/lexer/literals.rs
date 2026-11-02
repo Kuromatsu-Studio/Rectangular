@@ -189,8 +189,6 @@ fn string_literal() {
     let mut lexer = make_lexer(r#""this is a string.""#, diag);
     let tokens = lexer.tokenize();
 
-    println!("{:?}", tokens);
-
     assert_eq!(tokens[0].token_type, TType::StringLiteral);
     assert_eq!(tokens[0].lexeme, "this is a string.");
     assert_eq!(tokens[2].token_type, TType::End);
@@ -284,6 +282,19 @@ fn outofbounds_char16() {
     assert_eq!(diag.borrow().errors.len(), 1);
 }
 // end 
+
+
+#[test]
+fn unterminated_string_literal() {
+    let diag = make_diag(r#""this is a string."#);
+    let mut lexer = make_lexer(r#""this is a string."#, Rc::clone(&diag));
+    let tokens = lexer.tokenize();
+
+    println!("{:?}", tokens);
+
+    assert_eq!(tokens[0].token_type, TType::Illegal);
+    assert_eq!(diag.borrow().errors.len(), 1);
+}
 
 #[test]
 fn multichars_char_literal() {
