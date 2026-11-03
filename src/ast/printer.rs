@@ -1,4 +1,4 @@
-use std::fmt::{self, write};
+use std::fmt::{self};
 
 use crate::ast::ast::{BinaryOp, UnaryOp};
 use crate::ast::{
@@ -100,6 +100,9 @@ impl fmt::Display for ASTType {
             ASTTypeKind::I64 => write!(f, "i64"),
             ASTTypeKind::U64 => write!(f, "u64"),
             ASTTypeKind::F32 => write!(f, "f32"),
+            ASTTypeKind::C8 => write!(f, "c8"),
+            ASTTypeKind::C16 => write!(f, "c16"),
+            ASTTypeKind::C32 => write!(f, "c32"),
             ASTTypeKind::F64 => write!(f, "f64"),
             ASTTypeKind::Bool => write!(f, "bool"),
             ASTTypeKind::Unit => write!(f, "unit"),

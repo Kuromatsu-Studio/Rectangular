@@ -27,6 +27,9 @@ impl Parser {
             | TType::U64Key
             | TType::F32Key
             | TType::F64Key
+            | TType::C8Key
+            | TType::C16Key
+            | TType::C32Key
             | TType::BoolKey
             | TType::TypeKey
             | TType::UnitKey => {

@@ -51,6 +51,9 @@ impl<'a> Lexer<'a> {
             ("u64".to_string(), TType::U64Key),
             ("f32".to_string(), TType::F32Key),
             ("f64".to_string(), TType::F64Key),
+            ("c8".to_string(), TType::C8Key),
+            ("c16".to_string(), TType::C16Key),
+            ("c32".to_string(), TType::C32Key),
             ("bool".to_string(), TType::BoolKey),
         ]);
         keywords
