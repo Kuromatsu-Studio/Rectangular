@@ -82,3 +82,36 @@ fn keyword_unit() {
     assert_eq!(tokens[0].lexeme, "unit");
     assert_eq!(tokens[2].token_type, TType::End)
 }
+
+#[test]
+fn keyword_c8key() {
+    let diag = make_diag("c8");
+    let mut lexer = make_lexer("c8", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::C8Key);
+    assert_eq!(tokens[0].lexeme, "c8");
+    assert_eq!(tokens[1].token_type, TType::End)
+}
+
+#[test]
+fn keyword_c16key() {
+    let diag = make_diag("c16");
+    let mut lexer = make_lexer("c16", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::C16Key);
+    assert_eq!(tokens[0].lexeme, "c16");
+    assert_eq!(tokens[1].token_type, TType::End)
+}
+
+#[test]
+fn keyword_c32key() {
+    let diag = make_diag("c32");
+    let mut lexer = make_lexer("c32", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::C32Key);
+    assert_eq!(tokens[0].lexeme, "c32");
+    assert_eq!(tokens[1].token_type, TType::End)
+}
