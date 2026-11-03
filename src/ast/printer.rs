@@ -135,6 +135,21 @@ impl ASTExpr {
                 write!(f, "Literal({}) @ {}", lit, self.span)
             }
 
+            ASTExprKind::Attributed {
+                attributes,
+                binding,
+            } => {
+                write!(f, "Attributed: ")?;
+                for (i, attribute) in attributes.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "Attribute: {} ", attribute)?;
+                }
+
+                write!(f, "Binding: {} ", binding)
+            }
+
             ASTExprKind::Dereference(inner) => write!(f, "Dereference: {}", inner),
 
             ASTExprKind::AddressOf(inner) => write!(f, "AddressOf: {}", inner),

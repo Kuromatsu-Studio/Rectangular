@@ -52,6 +52,10 @@ pub enum ASTExprKind {
         condition: Box<ASTExpr>,
         body: Box<ASTExpr>,
     },
+    Attributed {
+        attributes: Vec<ASTExpr>,
+        binding: Box<ASTExpr>,
+    },
     Dereference(Box<ASTExpr>),
     AddressOf(Box<ASTExpr>),
     TypeExpr(Box<ASTType>),

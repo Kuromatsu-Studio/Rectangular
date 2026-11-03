@@ -44,6 +44,7 @@ pub enum TType {
     Dollar,          //$
     DoubleDollar,    //$$
     Percent,         //%
+    At,              //@
 
     ///Primitive expression tokens
     True, //true
