@@ -307,6 +307,7 @@ impl Parser {
                 }
             }
             TType::Bang | TType::Minus => self.parse_unary(),
+            TType::At => self.parse_attributed_expr(),
             TType::Identifier => {
                 let tt = |n| self.peek_nth(n).map(|t| t.token_type.clone());
                 if tt(1) == Some(TType::Lparen)
@@ -571,6 +572,50 @@ impl Parser {
             ASTExprKind::StructConstructor {
                 name: Box::new(name),
                 members,
+            },
+            span,
+        ))
+    }
+
+    fn parse_attributed_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::At)?;
+        self.expect_token(TType::Lparen)?;
+        let mut attributes = Vec::new();
+        loop {
+            if self.current_token()?.token_type == TType::Rparen {
+                break;
+            }
+
+            let attribute = self.parse_expr(Precedence::Lowest)?;
+            match attribute.kind {
+                ASTExprKind::Identifier(_) | ASTExprKind::Call(_, _) => (),
+                _ => {
+                    self.report(
+                        "attributes must only be identifiers or calls".to_string(),
+                        Some(attribute.span.clone()),
+                    );
+                    break;
+                }
+            }
+            attributes.push(attribute);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect_token(TType::Rparen)?;
+        if self.current_token()?.token_type == TType::Semicolon {
+            self.advance();
+        }
+        let binding = self.parse_bind()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(
+            ASTExprKind::Attributed {
+                attributes,
+                binding: Box::new(binding),
             },
             span,
         ))

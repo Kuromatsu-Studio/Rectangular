@@ -535,8 +535,9 @@ impl<'a> Lexer<'a> {
                     );
 
                     TType::Illegal
-
-                } else { TType::Char8Literal }
+                } else {
+                    TType::Char8Literal
+                }
             }
             "c16" => {
                 if ch.len_utf16() != 1 {
@@ -546,8 +547,9 @@ impl<'a> Lexer<'a> {
                     );
 
                     TType::Illegal
-
-                } else { TType::Char16Literal }
+                } else {
+                    TType::Char16Literal
+                }
             }
             "c32" => TType::Char32Literal,
             _ => {
@@ -779,6 +781,10 @@ impl<'a> Lexer<'a> {
                     ";".to_string(),
                     Span::new(start, self.pos),
                 )
+            }
+            Some('@') => {
+                self.advance();
+                Token::new(TType::At, "@".to_string(), Span::new(start, self.pos))
             }
             Some('=') => {
                 self.advance();
