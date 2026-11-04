@@ -19,6 +19,7 @@ pub enum BinaryOp {
     LogicalAnd, // &&
     BitOr,      // |
     BitAnd,     // &
+    BitXor,     // ^
     Modulus,    //%
     Assign,     //=
     AddAssign,  //+=
@@ -26,6 +27,7 @@ pub enum BinaryOp {
     MulAssign,  //*=
     DivAssign,  //`/=`
     Access,     //.
+    Range,      //..
     Invalid,
 }
 
@@ -53,8 +55,10 @@ impl BinaryOp {
             TType::DoubleAmpersand => BinaryOp::LogicalAnd,
             TType::Pipe => BinaryOp::BitOr,
             TType::Ampersand => BinaryOp::BitAnd,
+            TType::Caret => BinaryOp::BitXor,
             TType::DoubleRAngle => BinaryOp::Shr,
             TType::DoubleLAngle => BinaryOp::Shl,
+            TType::Range => BinaryOp::Range,
             _ => BinaryOp::Invalid,
         }
     }
@@ -85,7 +89,9 @@ impl BinaryOp {
             | TType::DoubleRAngle
             | TType::DoubleLAngle
             | TType::Percent
-            | TType::Dot => true,
+            | TType::Dot
+            | TType::Range
+            | TType::Caret => true,
             _ => false,
         }
     }
@@ -105,8 +111,9 @@ impl BinaryOp {
 ///This represents prefix operators
 #[derive(Debug, PartialEq, Eq)]
 pub enum UnaryOp {
-    Neg, //-
-    Not, //`!`
+    Neg,    //-
+    Not,    //`!`
+    BitNot, //~
     Invalid,
 }
 
@@ -115,6 +122,7 @@ impl UnaryOp {
         match ttype {
             TType::Bang => UnaryOp::Not,
             TType::Minus => UnaryOp::Neg,
+            TType::Tilde => UnaryOp::BitNot,
             _ => UnaryOp::Invalid,
         }
     }
@@ -124,13 +132,14 @@ impl UnaryOp {
 pub enum Precedence {
     Lowest = 0,
     Assignment, // =
+    Range,      // ..
     Coalesce,   //"??"
     Or,         // ||
     And,        // &&
     Equality,   // == !=
     Comparison, // < > <= >=
     BitwiseOr,  //|
-    BitwiseXor, //xor
+    BitwiseXor, //^
     BitwiseAnd, //&
     Shift,      //<<,>>
     Term,       // + -
@@ -149,9 +158,11 @@ impl Precedence {
             TType::DoubleRAngle | TType::DoubleLAngle => Precedence::Shift,
             TType::Pipe => Precedence::BitwiseOr,
             TType::Ampersand => Precedence::BitwiseAnd,
+            TType::Caret => Precedence::BitwiseXor,
             TType::Neq | TType::Equality => Precedence::Equality,
             TType::Asterisk | TType::Slash | TType::Percent => Precedence::Factor,
             TType::Dot => Precedence::Call,
+            TType::Range => Precedence::Range,
             TType::Assign
             | TType::AddAssign
             | TType::SubAssign
@@ -164,7 +175,8 @@ impl Precedence {
     pub fn next(self) -> Self {
         match self {
             Precedence::Lowest => Precedence::Assignment,
-            Precedence::Assignment => Precedence::Coalesce,
+            Precedence::Assignment => Precedence::Range,
+            Precedence::Range => Precedence::Coalesce,
             Precedence::Coalesce => Precedence::Or,
             Precedence::Or => Precedence::And,
             Precedence::And => Precedence::Equality,

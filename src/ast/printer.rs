@@ -73,6 +73,8 @@ impl BinaryOp {
             BinaryOp::BitOr => "|",
             BinaryOp::Shr => ">>",
             BinaryOp::Shl => "<<",
+            BinaryOp::BitXor => "^",
+            BinaryOp::Range => "..",
             BinaryOp::Invalid => "<??>",
         }
     }
@@ -83,6 +85,7 @@ impl UnaryOp {
         match self {
             UnaryOp::Neg => "-",
             UnaryOp::Not => "!",
+            UnaryOp::BitNot => "~",
             UnaryOp::Invalid => "<??>",
         }
     }

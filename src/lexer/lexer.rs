@@ -188,7 +188,9 @@ impl<'a> Lexer<'a> {
         }
 
         // Check for float
-        if let Some('.') = self.current_char() {
+        if self.current_char() == Some('.')
+            && self.peek_char().map_or(false, |c| c.is_ascii_digit())
+        {
             self.advance();
             while let Some(ch) = self.current_char() {
                 if ch.is_ascii_digit() {
@@ -785,6 +787,14 @@ impl<'a> Lexer<'a> {
             Some('@') => {
                 self.advance();
                 Token::new(TType::At, "@".to_string(), Span::new(start, self.pos))
+            }
+            Some('^') => {
+                self.advance();
+                Token::new(TType::Caret, "^".to_string(), Span::new(start, self.pos))
+            }
+            Some('~') => {
+                self.advance();
+                Token::new(TType::Tilde, "~".to_string(), Span::new(start, self.pos))
             }
             Some('=') => {
                 self.advance();
