@@ -206,6 +206,31 @@ fn string_literal_with_esc() {
 }
 
 #[test]
+fn new_line_esc() {
+    let diag = make_diag(r#""this is a string\n with an escape char.""#);
+    let mut lexer = make_lexer(r#""this is a string\n with an escape char.""#, diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::StringLiteral);
+    assert_eq!(tokens[0].lexeme, "this is a string\n with an escape char.");
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
+fn unknown_escape_sequence() {
+    let src = r#""a\bad""#;
+    let diag = make_diag(src);
+    let mut lexer = make_lexer(src, diag.clone());
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens.len(), 3, "tokens: {:?}", tokens);
+    assert_eq!(tokens[0].token_type, TType::StringLiteral);
+    assert_eq!(tokens[0].lexeme, "aad");
+    assert_eq!(tokens[1].token_type, TType::Semicolon);
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
 fn char8_literal() {
     let diag = make_diag("'a'");
     let mut lexer = make_lexer("'a'", diag);
@@ -216,7 +241,6 @@ fn char8_literal() {
     assert_eq!(tokens[0].token_type, TType::Char8Literal);
     assert_eq!(tokens[2].token_type, TType::End);
 }
-
 
 #[test]
 fn char32_literal() {
@@ -250,7 +274,6 @@ fn unterminated_char_literal() {
     assert_eq!(diag.borrow().errors.len(), 1);
 }
 
-
 #[test]
 fn empty_char_literal() {
     let diag = make_diag("''");
@@ -260,7 +283,6 @@ fn empty_char_literal() {
     assert_eq!(tokens[0].token_type, TType::Illegal);
     assert_eq!(diag.borrow().errors.len(), 1);
 }
-
 
 // out of bounds char tests
 #[test]
@@ -342,7 +364,7 @@ fn int_literal_garbage_suffix(){
     let diag = make_diag("8xyz");
     let mut lexer = make_lexer("8xyz", Rc::clone(&diag));
     let tokens = lexer.tokenize();
-    println!("Token array: {:?}", tokens);
+
     assert_eq!(tokens[0].token_type, TType::Illegal);
     assert_eq!(tokens[0].lexeme, "8");
     assert_eq!(tokens[1].token_type, TType::End);
