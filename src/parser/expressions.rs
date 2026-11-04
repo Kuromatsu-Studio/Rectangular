@@ -306,7 +306,7 @@ impl Parser {
                     return self.parse_grouped();
                 }
             }
-            TType::Bang | TType::Minus => self.parse_unary(),
+            TType::Bang | TType::Minus | TType::Tilde => self.parse_unary(),
             TType::At => self.parse_attributed_expr(),
             TType::Identifier => {
                 let tt = |n| self.peek_nth(n).map(|t| t.token_type.clone());
