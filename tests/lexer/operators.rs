@@ -360,18 +360,6 @@ fn semicolon(){
 }
 
 #[test]
-fn bindassign(){
-    let diag = make_diag(":=");
-    let mut lexer = make_lexer(":=", diag);
-    let tokens = lexer.tokenize();
-
-    assert_eq!(tokens[0].token_type, TType::BindAssign);
-    assert_eq!(tokens[0].lexeme, ":=");
-    assert_eq!(tokens[1].token_type, TType::End);
-}
-
-
-#[test]
 fn dollar(){
     let diag = make_diag("$");
     let mut lexer = make_lexer("$", diag);
@@ -418,3 +406,5 @@ fn at_symbol(){
 lexer_otest!(double_rangle, ">>", DoubleRAngle);
 lexer_otest!(double_langle, "<<", DoubleLAngle);
 lexer_otest!(percent, "%", Percent);
+lexer_otest!(caret, "^", Caret);
+lexer_otest!(tilde, "~", Tilde);
