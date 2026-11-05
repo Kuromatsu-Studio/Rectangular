@@ -720,13 +720,6 @@ impl<'a> Lexer<'a> {
                         "::".to_string(),
                         Span::new(start, self.pos),
                     )
-                } else if let Some('=') = self.current_char() {
-                    self.advance();
-                    Token::new(
-                        TType::BindAssign,
-                        ":=".to_string(),
-                        Span::new(start, self.pos),
-                    )
                 } else {
                     Token::new(TType::Colon, ":".to_string(), Span::new(start, self.pos))
                 }

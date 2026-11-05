@@ -4,6 +4,7 @@ use crate::ast::ast::{BinaryOp, UnaryOp};
 use crate::ast::{
     ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType, ASTTypeKind,
 };
+
 use crate::diagnostics::Span;
 
 fn indent(f: &mut fmt::Formatter, depth: usize) -> fmt::Result {
@@ -138,36 +139,92 @@ impl ASTExpr {
                 write!(f, "Literal({}) @ {}", lit, self.span)
             }
 
+            ASTExprKind::Identifier(name) => {
+                indent(f, depth)?;
+                write!(f, "Identifier({}) @ {}", name, self.span)
+            }
+
+            ASTExprKind::Break => {
+                indent(f, depth)?;
+                write!(f, "Break @{}", self.span)
+            }
+
+            ASTExprKind::Continue => {
+                indent(f, depth)?;
+                write!(f, "Continue @{}", self.span)
+            }
+
+            ASTExprKind::TypeExpr(ty) => {
+                indent(f, depth)?;
+                write!(f, "TypeExpr: {} @ {}", ty, self.span)
+            }
+
+            ASTExprKind::Dereference(inner) => {
+                indent(f, depth)?;
+                writeln!(f, "Dereference @ {} {{", self.span)?;
+                inner.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
+            ASTExprKind::AddressOf(inner) => {
+                indent(f, depth)?;
+                writeln!(f, "AddressOf @ {} {{", self.span)?;
+                inner.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
+            ASTExprKind::DollarExpr(expr) => {
+                indent(f, depth)?;
+                writeln!(f, "DollarExpr @ {} {{", self.span)?;
+                expr.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
+            ASTExprKind::DoubleDollar(expr) => {
+                indent(f, depth)?;
+                writeln!(f, "DoubleDollarExpr @ {} {{", self.span)?;
+                expr.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
             ASTExprKind::Attributed {
                 attributes,
                 binding,
             } => {
-                write!(f, "Attributed: ")?;
+                indent(f, depth)?;
+                writeln!(f, "Attributed @ {} {{", self.span)?;
+                indent(f, depth + 1)?;
+                write!(f, "Attributes: ")?;
                 for (i, attribute) in attributes.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "Attribute: {} ", attribute)?;
+                    write!(f, "{}", attribute)?;
                 }
-
-                write!(f, "Binding: {} ", binding)
+                writeln!(f)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Binding:")?;
+                binding.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
             }
-
-            ASTExprKind::Dereference(inner) => write!(f, "Dereference: {}", inner),
-
-            ASTExprKind::AddressOf(inner) => write!(f, "AddressOf: {}", inner),
-
-            ASTExprKind::TypeExpr(ty) => write!(f, "Type Expr: {}", ty),
 
             ASTExprKind::Lambda {
                 params,
                 ret_ty,
                 body,
             } => {
-                indent(f, depth + 1)?;
-                write!(f, "Lambda: ")?;
-
-                write!(f, "(")?;
+                indent(f, depth)?;
+                write!(f, "Lambda @ {} (", self.span)?;
                 for (i, param) in params.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
@@ -177,149 +234,136 @@ impl ASTExpr {
                 write!(f, ")")?;
 
                 if let Some(ty) = ret_ty {
-                    write!(f, " Return_Type:  {}", ty)?;
+                    write!(f, " -> {}", ty)?;
                 }
 
-                write!(f, " -> Body: {{")?;
-                write!(f, "{}", body)?;
+                writeln!(f, " {{")?;
+                body.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
                 write!(f, "}}")
             }
 
-            ASTExprKind::DollarExpr(expr) => {
-                write!(f, "DollarExpr: ")?;
-                indent(f, depth + 1)?;
-                expr.fmt_pretty(f, depth)
-            }
-
-            ASTExprKind::DoubleDollar(expr) => {
-                write!(f, "DoubleDollarExpr: ")?;
-                indent(f, depth + 1)?;
-                expr.fmt_pretty(f, depth)
-            }
-
-            ASTExprKind::Bind {
-                mutable,
-                names,
-                ty,
-                init,
-            } => {
-                indent(f, depth + 1)?;
-                write!(f, "Bind: ")?;
-
-                write!(f, "Mutable: {} ", mutable)?;
-
+            ASTExprKind::Bind { names, ty, init } => {
+                indent(f, depth)?;
+                write!(f, "Bind @ {} (names: [", self.span)?;
                 for (i, name) in names.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
                     }
-                    write!(f, "Name {} ", name)?;
+                    write!(f, "{}", name)?;
                 }
+                write!(f, "]")?;
 
                 if let Some(ty_val) = ty {
-                    write!(f, "Type: {}", ty_val)?;
+                    write!(f, ", type: {}", ty_val)?;
                 }
-
-                write!(f, " Value: {{")?;
 
                 if let Some(init_val) = init {
-                    write!(f, "{}", init_val)?;
+                    writeln!(f, ") {{")?;
+                    init_val.fmt_pretty(f, depth + 1)?;
+                    writeln!(f)?;
+                    indent(f, depth)?;
+                    write!(f, "}}")
+                } else {
+                    write!(f, ")")
                 }
-
-                write!(f, "}}")
             }
 
             ASTExprKind::Struct { members } => {
-                write!(f, "Struct: {{")?;
-                for (i, member) in members.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
+                indent(f, depth)?;
+                if members.is_empty() {
+                    write!(f, "Struct {{}} @ {}", self.span)
+                } else {
+                    writeln!(f, "Struct @ {} {{", self.span)?;
+                    for (i, member) in members.iter().enumerate() {
+                        if i > 0 {
+                            writeln!(f)?;
+                        }
+                        indent(f, depth + 1)?;
+                        write!(f, "{}", member)?;
                     }
-                    write!(f, "Member {} ", member)?;
+                    writeln!(f)?;
+                    indent(f, depth)?;
+                    write!(f, "}}")
                 }
-                write!(f, "}}")
             }
 
             ASTExprKind::StructConstructor { name, members } => {
-                write!(f, " Struct Constructor: {} (", name)?;
                 indent(f, depth)?;
-                for (i, member) in members.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
+                if members.is_empty() {
+                    write!(f, "StructConstructor({}) @ {}", name, self.span)
+                } else {
+                    writeln!(f, "Struct Constructor: {} @ {} {{", name, self.span)?;
+                    for (i, member) in members.iter().enumerate() {
+                        if i > 0 {
+                            writeln!(f)?;
+                        }
+                        indent(f, depth + 1)?;
+                        write!(f, "{}", member)?;
                     }
-                    write!(f, " {} ", member)?;
+                    writeln!(f)?;
+                    indent(f, depth)?;
+                    write!(f, "}}")
                 }
-
-                write!(f, ")")
             }
-
-            ASTExprKind::Break => write!(f, "Break @{}", self.span),
-            ASTExprKind::Continue => write!(f, "Continue @{}", self.span),
 
             ASTExprKind::IfExpr {
                 condition,
                 if_body,
                 else_body,
             } => {
-                write!(f, "IfExpr: {{")?;
                 indent(f, depth)?;
-                write!(f, "Condition: {} ", condition)?;
-                write!(f, "Body: {} ", if_body)?;
+                writeln!(f, "IfExpr @ {} {{", self.span)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Condition:")?;
+                condition.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Body:")?;
+                if_body.fmt_pretty(f, depth + 2)?;
                 if let Some(else_bod) = else_body {
-                    write!(f, "Else: {} ", else_bod)?;
+                    writeln!(f)?;
+                    indent(f, depth + 1)?;
+                    writeln!(f, "Else:")?;
+                    else_bod.fmt_pretty(f, depth + 2)?;
                 }
+                writeln!(f)?;
+                indent(f, depth)?;
                 write!(f, "}}")
             }
 
             ASTExprKind::WhileExpr { condition, body } => {
-                write!(f, "WhileExpr: ")?;
                 indent(f, depth)?;
-                write!(f, "Condition {} ", condition)?;
-                write!(f, "Body: {}", body)
-            }
-
-            ASTExprKind::Identifier(name) => {
+                writeln!(f, "WhileExpr @ {} {{", self.span)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Condition:")?;
+                condition.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Body:")?;
+                body.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
                 indent(f, depth)?;
-                write!(f, "Identifier({}) @ {}", name, self.span)
+                write!(f, "}}")
             }
 
             ASTExprKind::Unary(op, expr) => {
                 indent(f, depth)?;
-                write!(f, "Unary({}) @ {} {{", op.as_str(), self.span)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f, "Unary({}) @ {} {{", op.as_str(), self.span)?;
                 expr.fmt_pretty(f, depth + 1)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")
             }
 
             ASTExprKind::Binary(left, op, right) => {
                 indent(f, depth)?;
-                write!(f, "Binary({}) @ {} {{", op.as_str(), self.span)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f, "Binary({}) @ {} {{", op.as_str(), self.span)?;
                 left.fmt_pretty(f, depth + 1)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 right.fmt_pretty(f, depth + 1)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")
             }
@@ -329,20 +373,14 @@ impl ASTExpr {
                 if exprs.is_empty() {
                     write!(f, "Block {{}} @ {}", self.span)
                 } else {
-                    write!(f, "Block @ {} {{", self.span)?;
-                    for e in exprs {
-                        write!(
-                            f,
-                            "
-"
-                        )?;
+                    writeln!(f, "Block @ {} {{", self.span)?;
+                    for (i, e) in exprs.iter().enumerate() {
+                        if i > 0 {
+                            writeln!(f)?;
+                        }
                         e.fmt_pretty(f, depth + 1)?;
                     }
-                    write!(
-                        f,
-                        "
-"
-                    )?;
+                    writeln!(f)?;
                     indent(f, depth)?;
                     write!(f, "}}")
                 }
@@ -350,77 +388,35 @@ impl ASTExpr {
 
             ASTExprKind::Call(func, args) => {
                 indent(f, depth)?;
-                write!(f, "Call @ {} {{", self.span)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f, "Call @ {} {{", self.span)?;
                 indent(f, depth + 1)?;
-                write!(
-                    f,
-                    "Func:
-"
-                )?;
+                writeln!(f, "Func:")?;
                 func.fmt_pretty(f, depth + 2)?;
                 if !args.is_empty() {
-                    write!(
-                        f,
-                        "
-"
-                    )?;
+                    writeln!(f)?;
                     indent(f, depth + 1)?;
-                    write!(f, "Args:")?;
+                    writeln!(f, "Args:")?;
                     for arg in args {
-                        write!(
-                            f,
-                            "
-"
-                        )?;
+                        writeln!(f)?;
                         arg.fmt_pretty(f, depth + 2)?;
                     }
                 }
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")
             }
 
             ASTExprKind::Index(base, idx) => {
                 indent(f, depth)?;
-                write!(f, "Index @ {} {{", self.span)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f, "Index @ {} {{", self.span)?;
                 indent(f, depth + 1)?;
-                write!(
-                    f,
-                    "Base:
-"
-                )?;
+                writeln!(f, "Base:")?;
                 base.fmt_pretty(f, depth + 2)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 indent(f, depth + 1)?;
-                write!(
-                    f,
-                    "Index:
-"
-                )?;
+                writeln!(f, "Index:")?;
                 idx.fmt_pretty(f, depth + 2)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
+                writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")
             }
@@ -430,20 +426,14 @@ impl ASTExpr {
                 if exprs.is_empty() {
                     write!(f, "Array[] @ {}", self.span)
                 } else {
-                    write!(f, "Array @ {} {{", self.span)?;
-                    for e in exprs {
-                        write!(
-                            f,
-                            "
-"
-                        )?;
+                    writeln!(f, "Array @ {} {{", self.span)?;
+                    for (i, e) in exprs.iter().enumerate() {
+                        if i > 0 {
+                            writeln!(f)?;
+                        }
                         e.fmt_pretty(f, depth + 1)?;
                     }
-                    write!(
-                        f,
-                        "
-"
-                    )?;
+                    writeln!(f)?;
                     indent(f, depth)?;
                     write!(f, "}}")
                 }
@@ -451,25 +441,15 @@ impl ASTExpr {
 
             ASTExprKind::Return(expr) => {
                 indent(f, depth)?;
-                write!(f, "Return @ {} ", self.span)?;
-                write!(
-                    f,
-                    "
-"
-                )?;
-
                 if let Some(expr_val) = expr {
+                    writeln!(f, "Return @ {} {{", self.span)?;
                     expr_val.fmt_pretty(f, depth + 1)?;
-                    write!(
-                        f,
-                        "
-"
-                    )?;
-
+                    writeln!(f)?;
                     indent(f, depth)?;
+                    write!(f, "}}")
+                } else {
+                    write!(f, "Return @ {} (void)", self.span)
                 }
-
-                write!(f, "")
             }
         }
     }
@@ -485,11 +465,7 @@ pub fn pretty_module(exprs: Vec<ASTExpr>) -> String {
     let mut out = String::new();
     for (i, stmt) in exprs.iter().enumerate() {
         if i > 0 {
-            out.push_str(
-                "
-
-",
-            );
+            out.push_str("\n\n");
         }
         out.push_str(&format!("{}", stmt));
     }
