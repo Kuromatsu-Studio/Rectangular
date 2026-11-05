@@ -102,12 +102,7 @@ impl Parser {
             None
         };
 
-        let mutbind = self.current_token()?.token_type == TType::Assign;
-        let immutbind = self.current_token()?.token_type == TType::BindAssign;
-        let mut mutable = false;
-
-        let init = if mutbind || immutbind {
-            mutable = mutbind;
+        let init = if self.current_token()?.token_type == TType::Assign {
             self.advance();
             Some(Box::new(self.parse_expr(Precedence::Lowest)?))
         } else {
@@ -117,15 +112,7 @@ impl Parser {
         let end = self.last_end;
         let span = Span::new(start, end);
 
-        Some(ASTExpr::new(
-            ASTExprKind::Bind {
-                mutable,
-                names,
-                ty,
-                init,
-            },
-            span,
-        ))
+        Some(ASTExpr::new(ASTExprKind::Bind { names, ty, init }, span))
     }
 
     fn parse_if_expr(&mut self) -> Option<ASTExpr> {
@@ -196,17 +183,17 @@ impl Parser {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbracket)?;
         let mut elements = Vec::new();
-        while self.current_token()?.token_type != TType::End
-            && self.current_token()?.token_type != TType::Rbracket
-        {
+        loop {
             let expr = self.parse_expr(Precedence::Lowest)?;
             elements.push(expr);
             if self.current_token()?.token_type == TType::Comma {
                 self.advance();
+            } else {
+                break;
             }
         }
-        let end = self.current_token()?.span.end;
         self.expect_token(TType::Rbracket)?;
+        let end = self.last_end;
         let span = Span::new(start, end);
         Some(ASTExpr::new(ASTExprKind::Array(elements), span))
     }
@@ -481,15 +468,16 @@ impl Parser {
     fn parse_call_arguments(&mut self) -> Option<Vec<ASTExpr>> {
         let mut args = Vec::new();
         self.expect_token(TType::Lparen)?;
-        while self.current_token()?.token_type != TType::Rparen
-            && self.current_token()?.token_type != TType::End
-        {
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-                continue;
-            }
+
+        loop {
             let expr = self.parse_expr(Precedence::Lowest)?;
             args.push(expr);
+
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
         }
 
         self.expect_token(TType::Rparen)?;

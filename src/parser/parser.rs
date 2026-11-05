@@ -120,7 +120,6 @@ impl Parser {
                 TType::End
                     | TType::Semicolon
                     | TType::Assign
-                    | TType::BindAssign
                     | TType::Comma
                     | TType::Rparen
                     | TType::Rbrace
