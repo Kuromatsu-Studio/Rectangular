@@ -65,6 +65,7 @@ pub enum ASTExprKind {
     Return(Option<Box<ASTExpr>>),
     Call(Box<ASTExpr>, Vec<ASTExpr>),
     Index(Box<ASTExpr>, Box<ASTExpr>),
+    Access(Box<ASTExpr>, Box<ASTExpr>),
     Array(Vec<ASTExpr>),
     Identifier(String),
 }

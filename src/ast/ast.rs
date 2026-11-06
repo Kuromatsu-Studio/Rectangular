@@ -26,7 +26,6 @@ pub enum BinaryOp {
     SubAssign,  //-=
     MulAssign,  //*=
     DivAssign,  //`/=`
-    Access,     //.
     Range,      //..
     Invalid,
 }
@@ -50,7 +49,6 @@ impl BinaryOp {
             TType::Lte => BinaryOp::Lte,
             TType::Neq => BinaryOp::Neq,
             TType::Equality => BinaryOp::Eq,
-            TType::Dot => BinaryOp::Access,
             TType::DoublePipe => BinaryOp::LogicalOr,
             TType::DoubleAmpersand => BinaryOp::LogicalAnd,
             TType::Pipe => BinaryOp::BitOr,
@@ -89,7 +87,6 @@ impl BinaryOp {
             | TType::DoubleRAngle
             | TType::DoubleLAngle
             | TType::Percent
-            | TType::Dot
             | TType::Range
             | TType::Caret => true,
             _ => false,
@@ -161,7 +158,6 @@ impl Precedence {
             TType::Caret => Precedence::BitwiseXor,
             TType::Neq | TType::Equality => Precedence::Equality,
             TType::Asterisk | TType::Slash | TType::Percent => Precedence::Factor,
-            TType::Dot => Precedence::Call,
             TType::Range => Precedence::Range,
             TType::Assign
             | TType::AddAssign

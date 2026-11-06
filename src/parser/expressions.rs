@@ -414,7 +414,7 @@ impl Parser {
     fn parse_prefix_with_postfix(&mut self) -> Option<ASTExpr> {
         let mut expr = self.parse_prefix()?;
         let valid_postfix = |t: TType| match t {
-            TType::Lparen | TType::Lbracket | TType::DotStar => true,
+            TType::Lparen | TType::Lbracket | TType::DotStar | TType::Dot => true,
             _ => false,
         };
         while let Some(token) = self.current_token() {
@@ -437,11 +437,24 @@ impl Parser {
             TType::Lparen => self.parse_call(left),
             TType::Lbracket => self.parse_index(left),
             TType::DotStar => self.parse_dereference(left),
+            TType::Dot => self.parse_access(left),
             _ => {
                 self.report("Invalid postfix expression".to_string(), Some(span));
                 None
             }
         }
+    }
+
+    fn parse_access(&mut self, left: ASTExpr) -> Option<ASTExpr> {
+        let start = left.span.start;
+        self.expect_token(TType::Dot);
+        let access = self.parse_identifier()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTExpr::new(
+            ASTExprKind::Access(Box::new(left), Box::new(access)),
+            span,
+        ))
     }
 
     fn parse_dereference(&mut self, left: ASTExpr) -> Option<ASTExpr> {
