@@ -262,6 +262,18 @@ fn backslash_char() {
 }
 
 #[test]
+fn unicode_escape_char() {
+    let input = r#""string with \u0041 unicode""#;
+    let diag = make_diag(input);
+    let mut lexer = make_lexer(input, diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::StringLiteral);
+    assert_eq!(tokens[0].lexeme, "string with 0041 unicode");
+    assert_eq!(tokens[2].token_type, TType::End);
+}
+
+#[test]
 fn unknown_escape_sequence() {
     let src = r#""a\bad""#;
     let diag = make_diag(src);
