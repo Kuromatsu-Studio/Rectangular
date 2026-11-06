@@ -67,7 +67,6 @@ impl BinaryOp {
             BinaryOp::SubAssign => "-=",
             BinaryOp::MulAssign => "*=",
             BinaryOp::DivAssign => "/=",
-            BinaryOp::Access => ".",
             BinaryOp::LogicalOr => "||",
             BinaryOp::LogicalAnd => "&&",
             BinaryOp::BitAnd => "&",
@@ -416,6 +415,21 @@ impl ASTExpr {
                 indent(f, depth + 1)?;
                 writeln!(f, "Index:")?;
                 idx.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
+            ASTExprKind::Access(left, right) => {
+                indent(f, depth)?;
+                writeln!(f, "Access @ {} {{", self.span)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Left: ")?;
+                left.fmt_pretty(f, depth + 2)?;
+                writeln!(f)?;
+                indent(f, depth + 1)?;
+                writeln!(f, "Right: ")?;
+                right.fmt_pretty(f, depth + 2)?;
                 writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")
