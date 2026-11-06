@@ -216,7 +216,6 @@ fn new_line_esc() {
     assert_eq!(tokens[2].token_type, TType::End);
 }
 
-
 #[test]
 fn tab_esc_char() {
     let diag = make_diag(r#""this is a string\t with an escape char.""#);
@@ -228,6 +227,17 @@ fn tab_esc_char() {
     assert_eq!(tokens[2].token_type, TType::End);
 }
 
+
+#[test]
+fn carriage_return() {
+    let diag = make_diag(r#""this is a string\r with an escape char.""#);
+    let mut lexer = make_lexer(r#""this is a string\r with an escape char.""#, diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::StringLiteral);
+    assert_eq!(tokens[0].lexeme, "this is a string\r with an escape char.");
+    assert_eq!(tokens[2].token_type, TType::End);
+}
 
 #[test]
 fn unknown_escape_sequence() {
