@@ -40,7 +40,7 @@ impl<'a> Lexer<'a> {
             ("continue".to_string(), TType::Continue),
             ("while".to_string(), TType::While),
             ("type".to_string(), TType::TypeKey),
-            ("unit".to_string(), TType::UnitKey),
+            ("u0".to_string(), TType::U0Key),
             ("i8".to_string(), TType::I8Key),
             ("u8".to_string(), TType::U8Key),
             ("i16".to_string(), TType::I16Key),
@@ -54,6 +54,7 @@ impl<'a> Lexer<'a> {
             ("c8".to_string(), TType::C8Key),
             ("c16".to_string(), TType::C16Key),
             ("c32".to_string(), TType::C32Key),
+            ("fn".to_string(), TType::Fn),
             ("bool".to_string(), TType::BoolKey),
         ]);
         keywords

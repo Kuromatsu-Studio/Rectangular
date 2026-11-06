@@ -108,12 +108,35 @@ impl fmt::Display for ASTType {
             ASTTypeKind::C32 => write!(f, "c32"),
             ASTTypeKind::F64 => write!(f, "f64"),
             ASTTypeKind::Bool => write!(f, "bool"),
-            ASTTypeKind::Unit => write!(f, "unit"),
+            ASTTypeKind::Unit => write!(f, "u0"),
             ASTTypeKind::Type => write!(f, "type"),
-            ASTTypeKind::Expr(inner) => write!(f, "{}", inner),
             ASTTypeKind::Pointer(inner) => write!(f, "*{}", inner),
+            ASTTypeKind::FunctionPtr {
+                type_params,
+                return_type,
+            } => {
+                write!(f, "fn(")?;
+                for (i, param) in type_params.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", param)?;
+                }
+                write!(f, "): ")?;
+                write!(f, "{}", return_type)
+            }
             ASTTypeKind::None => write!(f, "<?>"),
-            ASTTypeKind::Custom(name) => write!(f, "{}", name),
+            ASTTypeKind::Path(path) => write!(f, "{}", path.join(".")),
+            ASTTypeKind::Applied { callee, args } => {
+                write!(f, "{}(", callee)?;
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", arg)?;
+                }
+                write!(f, ")")
+            }
         }
     }
 }
@@ -233,10 +256,10 @@ impl ASTExpr {
                 write!(f, ")")?;
 
                 if let Some(ty) = ret_ty {
-                    write!(f, " -> {}", ty)?;
+                    write!(f, ": {}", ty)?;
                 }
 
-                writeln!(f, " {{")?;
+                writeln!(f, "-> {{")?;
                 body.fmt_pretty(f, depth + 1)?;
                 writeln!(f)?;
                 indent(f, depth)?;

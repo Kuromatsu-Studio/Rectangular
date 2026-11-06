@@ -70,6 +70,7 @@ pub enum TType {
 
     ///keywords
     Macro,
+    Fn,
     Type,
     Return,
     Bind,
@@ -81,6 +82,7 @@ pub enum TType {
     While,
 
     ///Type keywords
+    U0Key,
     I8Key,
     U8Key,
     I16Key,
@@ -96,7 +98,6 @@ pub enum TType {
     C32Key,
     BoolKey,
     TypeKey,
-    UnitKey,
 
     ///EOF
     End,
@@ -138,7 +139,7 @@ pub fn ends_expression(t: &TType) -> bool {
             | TType::F64Key
             | TType::BoolKey
             | TType::TypeKey
-            | TType::UnitKey
+            | TType::U0Key
             | TType::Rparen
             | TType::Rbracket
             | TType::Rbrace

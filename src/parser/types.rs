@@ -1,19 +1,51 @@
 use crate::{
-    ast::{ASTExpr, ASTExprKind, ASTType, ASTTypeKind, Precedence},
+    ast::{ASTType, ASTTypeKind},
     diagnostics::Span,
     lexer::TType,
     parser::Parser,
 };
 
 impl Parser {
-    pub fn parse_type_expr(&mut self) -> Option<ASTExpr> {
-        let ty = self.parse_type()?;
-        let span = ty.span.clone();
-        Some(ASTExpr::new(ASTExprKind::TypeExpr(Box::new(ty)), span))
+    ///The main type sub parser
+    pub fn parse_type(&mut self) -> Option<ASTType> {
+        let mut ty = self.parse_type_atom()?;
+        loop {
+            if self.current_token()?.token_type != TType::Lparen {
+                break;
+            }
+
+            self.advance();
+            let mut args = Vec::new();
+
+            loop {
+                if self.current_token()?.token_type == TType::Rparen {
+                    break;
+                }
+
+                args.push(self.parse_type()?);
+
+                if self.current_token()?.token_type == TType::Comma {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+
+            self.expect_token(TType::Rparen)?;
+            let span = Span::new(ty.span.start, self.last_end);
+            ty = ASTType::new(
+                ASTTypeKind::Applied {
+                    callee: Box::new(ty),
+                    args,
+                },
+                span,
+            );
+        }
+
+        Some(ty)
     }
 
-    ///The main type sub parser
-    fn parse_type(&mut self) -> Option<ASTType> {
+    fn parse_type_atom(&mut self) -> Option<ASTType> {
         let ty_token = self.current_token()?.clone();
         let span = ty_token.span.clone();
         match ty_token.token_type {
@@ -32,31 +64,13 @@ impl Parser {
             | TType::C32Key
             | TType::BoolKey
             | TType::TypeKey
-            | TType::UnitKey => {
+            | TType::U0Key => {
                 self.advance();
                 Some(ASTType::basic(&ty_token))
             }
-            TType::Identifier => {
-                let name = self.current_token()?.lexeme.clone();
-                let span = self.current_token()?.span.clone();
-                self.advance();
-                Some(ASTType::new(ASTTypeKind::Custom(name), span))
-            }
-            TType::Asterisk => {
-                let start = self.current_token()?.span.start;
-                self.advance();
-                if self.operand_missing() {
-                    self.report(
-                        "expected a type after '*'".to_string(),
-                        Some(Span::new(start, self.last_end)),
-                    );
-                    return None;
-                }
-                let inner = Self::expr_to_type(self.parse_expr(Precedence::Call)?);
-                let end = self.last_end;
-                let span = Span::new(start, end);
-                Some(ASTType::new(ASTTypeKind::Pointer(Box::new(inner)), span))
-            }
+            TType::Identifier => self.parse_ident_type(),
+            TType::Asterisk => self.parse_pointer_type(),
+            TType::Fn => self.parse_function_pointer_type(),
             _ => {
                 self.report(
                     format!("Invalid type token {:?}", ty_token.token_type),
@@ -67,20 +81,76 @@ impl Parser {
         }
     }
 
-    pub fn parse_type_annotation(&mut self) -> Option<ASTType> {
-        Some(Self::expr_to_type(self.parse_expr(Precedence::Assignment)?))
+    fn parse_ident_type(&mut self) -> Option<ASTType> {
+        let start = self.current_token()?.span.start;
+        let first = self.current_token()?.lexeme.clone();
+
+        self.expect_token(TType::Identifier)?;
+
+        let mut path = vec![first];
+
+        while self.current_token()?.token_type == TType::Dot {
+            self.advance();
+            let field = self.current_token()?.clone();
+            if field.token_type != TType::Identifier {
+                self.report(
+                    "expected an identifier after '.' in a type path".to_string(),
+                    Some(field.span),
+                );
+                return None;
+            }
+            path.push(field.lexeme);
+            self.advance();
+        }
+
+        let end = self.last_end;
+        Some(ASTType::new(ASTTypeKind::Path(path), Span::new(start, end)))
+    }
+    fn parse_function_pointer_type(&mut self) -> Option<ASTType> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Fn)?;
+        self.expect_token(TType::Lparen)?;
+        let mut types = Vec::new();
+        loop {
+            if self.current_token()?.token_type == TType::Rparen {
+                break;
+            }
+            let ty = self.parse_type()?;
+            types.push(ty);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect_token(TType::Rparen)?;
+        self.expect_token(TType::Colon)?;
+        let ret_ty = self.parse_type()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTType::new(
+            ASTTypeKind::FunctionPtr {
+                type_params: types,
+                return_type: Box::new(ret_ty),
+            },
+            span,
+        ))
     }
 
-    fn expr_to_type(expr: ASTExpr) -> ASTType {
-        let span = expr.span.clone();
-        match expr.kind {
-            ASTExprKind::TypeExpr(ty) => *ty,
-            ASTExprKind::Identifier(name) => ASTType::new(ASTTypeKind::Custom(name), span),
-            kind => ASTType::new(
-                ASTTypeKind::Expr(Box::new(ASTExpr::new(kind, span.clone()))),
-                span,
-            ),
+    fn parse_pointer_type(&mut self) -> Option<ASTType> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Asterisk)?;
+        if self.operand_missing() {
+            self.report(
+                "expected a type after '*'".to_string(),
+                Some(Span::new(start, self.last_end)),
+            );
+            return None;
         }
+        let inner = self.parse_type()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTType::new(ASTTypeKind::Pointer(Box::new(inner)), span))
     }
 
     /*fn parse_array_type(&mut self) -> Option<ASTType> {

@@ -28,56 +28,14 @@ impl Parser {
         Some(left)
     }
 
-    fn parse_param(&mut self) -> Option<ASTParam> {
+    pub fn parse_param(&mut self) -> Option<ASTParam> {
         let name = self.parse_identifier()?;
         self.expect_token(TType::Colon)?;
-        let ty = self.parse_type_annotation()?;
+        let ty = self.parse_type()?;
         Some(ASTParam {
             name: Box::new(name),
             ty: Box::new(ty),
         })
-    }
-
-    fn parse_lambda(&mut self) -> Option<ASTExpr> {
-        let start = self.current_token()?.span.start;
-        self.expect_token(TType::Lparen)?;
-        let mut params = Vec::new();
-        loop {
-            if self.current_token()?.token_type == TType::Rparen {
-                break;
-            }
-
-            let param = self.parse_param()?;
-            params.push(param);
-
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            } else {
-                break;
-            }
-        }
-        self.expect_token(TType::Rparen)?;
-
-        let ret_ty = if self.current_token()?.token_type == TType::Colon {
-            self.advance();
-            Some(self.parse_type_annotation()?)
-        } else {
-            None
-        };
-
-        self.expect_token(TType::Arrow)?;
-        let body = self.parse_expr(Precedence::Lowest)?;
-        let end = self.last_end;
-        let span = Span::new(start, end);
-
-        Some(ASTExpr::new(
-            ASTExprKind::Lambda {
-                params,
-                ret_ty,
-                body: Box::new(body),
-            },
-            span,
-        ))
     }
 
     fn parse_bind(&mut self) -> Option<ASTExpr> {
@@ -97,7 +55,7 @@ impl Parser {
 
         let ty = if self.current_token()?.token_type == TType::Colon {
             self.advance();
-            Some(self.parse_type_annotation()?)
+            Some(self.parse_type()?)
         } else {
             None
         };
@@ -273,6 +231,7 @@ impl Parser {
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
             TType::Struct => self.parse_struct_expr(),
+            TType::Fn => self.parse_fn_expr(),
             TType::If => self.parse_if_expr(),
             TType::While => self.parse_while_expr(),
             TType::Return => self.parse_return(),
@@ -286,13 +245,7 @@ impl Parser {
                 self.advance();
                 Some(ASTExpr::new(ASTExprKind::Continue, span))
             }
-            TType::Lparen => {
-                if self.lparen_starts_function() {
-                    return self.parse_lambda();
-                } else {
-                    return self.parse_grouped();
-                }
-            }
+            TType::Lparen => self.parse_grouped(),
             TType::Bang | TType::Minus | TType::Tilde => self.parse_unary(),
             TType::At => self.parse_attributed_expr(),
             TType::Identifier => {
@@ -326,7 +279,7 @@ impl Parser {
             | TType::C32Key
             | TType::BoolKey
             | TType::TypeKey
-            | TType::UnitKey
+            | TType::U0Key
             | TType::Asterisk => self.parse_type_expr(),
             TType::DoubleAmpersand => {
                 self.report(
@@ -348,6 +301,12 @@ impl Parser {
                 None
             }
         }
+    }
+
+    fn parse_type_expr(&mut self) -> Option<ASTExpr> {
+        let ty = self.parse_type()?;
+        let span = ty.span.clone();
+        Some(ASTExpr::new(ASTExprKind::TypeExpr(Box::new(ty)), span))
     }
 
     fn parse_dollar_expr(&mut self) -> Option<ASTExpr> {

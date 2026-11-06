@@ -1,5 +1,4 @@
 use crate::{
-    ast::ASTExpr,
     diagnostics::Span,
     lexer::{TType, Token},
 };
@@ -20,9 +19,18 @@ pub enum ASTTypeKind {
     C16,
     C32,
     Bool,
-    Custom(String),
-    Expr(Box<ASTExpr>), // any expression that evaluates to a type, like List(i32)
     Pointer(Box<ASTType>),
+    Path(Vec<String>), //MyType, mod.MyType
+    //List(i32), mod.List(i32)
+    Applied {
+        callee: Box<ASTType>,
+        args: Vec<ASTType>,
+    },
+    //Function pointer like fn(i32, u32): i32 or fn(): u0
+    FunctionPtr {
+        type_params: Vec<ASTType>,
+        return_type: Box<ASTType>,
+    },
     Unit,
     Type,
     None,
@@ -56,7 +64,8 @@ impl ASTType {
             | TType::TypeKey
             | TType::Asterisk
             | TType::Identifier
-            | TType::UnitKey => true,
+            | TType::Fn
+            | TType::U0Key => true,
             _ => false,
         }
     }
@@ -78,7 +87,7 @@ impl ASTType {
             TType::C16Key => ASTTypeKind::C16,
             TType::C32Key => ASTTypeKind::C32,
             TType::TypeKey => ASTTypeKind::Type,
-            TType::UnitKey => ASTTypeKind::Unit,
+            TType::U0Key => ASTTypeKind::Unit,
             _ => ASTTypeKind::None,
         };
 
