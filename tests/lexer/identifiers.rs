@@ -73,13 +73,13 @@ lexer_ctest!(keyword_bool_type, "bool", BoolKey);
 lexer_ctest!(keyword_typekey, "type", TypeKey);
 
 #[test]
-fn keyword_unit() {
-    let diag = make_diag("unit");
-    let mut lexer = make_lexer("unit", diag);
+fn keyword_U0key() {
+    let diag = make_diag("u0");
+    let mut lexer = make_lexer("u0", diag);
     let tokens = lexer.tokenize();
     println!("{:?}", tokens);
-    assert_eq!(tokens[0].token_type, TType::UnitKey);
-    assert_eq!(tokens[0].lexeme, "unit");
+    assert_eq!(tokens[0].token_type, TType::U0Key);
+    assert_eq!(tokens[0].lexeme, "u0");
     assert_eq!(tokens[2].token_type, TType::End)
 }
 
@@ -113,5 +113,16 @@ fn keyword_c32key() {
 
     assert_eq!(tokens[0].token_type, TType::C32Key);
     assert_eq!(tokens[0].lexeme, "c32");
+    assert_eq!(tokens[1].token_type, TType::End)
+}
+
+#[test]
+fn keyword_fn() {
+    let diag = make_diag("fn");
+    let mut lexer = make_lexer("fn", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Fn);
+    assert_eq!(tokens[0].lexeme, "fn");
     assert_eq!(tokens[1].token_type, TType::End)
 }
