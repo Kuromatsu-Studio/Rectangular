@@ -90,6 +90,33 @@ impl Parser {
         }
     }
 
+    pub fn bracket_starts_array_type(&self) -> bool {
+        let mut depth: usize = 0;
+        let mut n = 1; // skip the '[' itself
+
+        while let Some(token) = self.peek_nth(n) {
+            match &token.token_type {
+                TType::Lbracket | TType::Lparen | TType::Lbrace => depth += 1,
+
+                TType::Rbracket if depth == 0 => return false, // matching ']', no ';'
+                TType::Rbracket | TType::Rparen | TType::Rbrace => {
+                    if depth == 0 {
+                        return false; // unbalanced; let the real parser report it
+                    }
+                    depth -= 1;
+                }
+
+                TType::Semicolon if depth == 0 => return true,
+                TType::End => return false,
+                _ => {}
+            }
+
+            n += 1;
+        }
+
+        false
+    }
+
     pub fn operand_missing(&self) -> bool {
         matches!(
             self.current_token().map(|t| &t.token_type),
