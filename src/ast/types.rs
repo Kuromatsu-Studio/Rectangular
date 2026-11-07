@@ -1,4 +1,5 @@
 use crate::{
+    ast::ASTExpr,
     diagnostics::Span,
     lexer::{TType, Token},
 };
@@ -31,6 +32,8 @@ pub enum ASTTypeKind {
         type_params: Vec<ASTType>,
         return_type: Box<ASTType>,
     },
+    //[i32; 8]
+    Array(Box<ASTType>, Box<ASTExpr>),
     Unit,
     Type,
     None,

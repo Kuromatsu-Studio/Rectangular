@@ -111,6 +111,7 @@ impl fmt::Display for ASTType {
             ASTTypeKind::Unit => write!(f, "u0"),
             ASTTypeKind::Type => write!(f, "type"),
             ASTTypeKind::Pointer(inner) => write!(f, "*{}", inner),
+            ASTTypeKind::Array(ty, elem_count) => write!(f, "[{}; {}]", ty, elem_count),
             ASTTypeKind::FunctionPtr {
                 type_params,
                 return_type,

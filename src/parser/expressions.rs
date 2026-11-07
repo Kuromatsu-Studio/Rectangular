@@ -260,7 +260,13 @@ impl Parser {
                 }
             }
             TType::Lbrace => self.parse_block(),
-            TType::Lbracket => self.parse_array_literal(),
+            TType::Lbracket => {
+                if self.bracket_starts_array_type() {
+                    self.parse_type_expr()
+                } else {
+                    self.parse_array_literal()
+                }
+            }
             TType::Dollar => self.parse_dollar_expr(),
             TType::DoubleDollar => self.parse_double_dollar_expr(),
             TType::Ampersand => self.parse_address_of_expr(),

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ASTType, ASTTypeKind},
+    ast::{ASTType, ASTTypeKind, Precedence},
     diagnostics::Span,
     lexer::TType,
     parser::Parser,
@@ -70,7 +70,8 @@ impl Parser {
             }
             TType::Identifier => self.parse_ident_type(),
             TType::Asterisk => self.parse_pointer_type(),
-            TType::Fn => self.parse_function_pointer_type(),
+            TType::Fn => self.parse_lambda_pointer_type(),
+            TType::Lbracket => self.parse_array_type(),
             _ => {
                 self.report(format!("expected a type"), Some(span.clone()));
                 None
@@ -103,7 +104,7 @@ impl Parser {
         let end = self.last_end;
         Some(ASTType::new(ASTTypeKind::Path(path), Span::new(start, end)))
     }
-    fn parse_function_pointer_type(&mut self) -> Option<ASTType> {
+    fn parse_lambda_pointer_type(&mut self) -> Option<ASTType> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Fn)?;
         self.expect_token(TType::Lparen)?;
@@ -150,7 +151,7 @@ impl Parser {
         Some(ASTType::new(ASTTypeKind::Pointer(Box::new(inner)), span))
     }
 
-    /*fn parse_array_type(&mut self) -> Option<ASTType> {
+    fn parse_array_type(&mut self) -> Option<ASTType> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Lbracket)?;
         let element_type = self.parse_type()?;
@@ -163,5 +164,5 @@ impl Parser {
             ASTTypeKind::Array(Box::new(element_type), Box::new(array_size)),
             span,
         ))
-    }*/
+    }
 }
