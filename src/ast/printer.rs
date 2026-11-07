@@ -259,11 +259,18 @@ impl ASTExpr {
                     write!(f, ": {}", ty)?;
                 }
 
-                writeln!(f, "-> {{")?;
-                body.fmt_pretty(f, depth + 1)?;
-                writeln!(f)?;
-                indent(f, depth)?;
-                write!(f, "}}")
+                if body.is_some() {
+                    writeln!(f, "-> {{")?;
+                    match body {
+                        Some(bd) => bd.fmt_pretty(f, depth + 1)?,
+                        None => write!(f, "")?,
+                    }
+                    writeln!(f)?;
+                    indent(f, depth)?;
+                    write!(f, "}}")?;
+                }
+
+                write!(f, "")
             }
 
             ASTExprKind::Bind { names, ty, init } => {

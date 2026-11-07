@@ -231,7 +231,7 @@ impl Parser {
             | TType::False => self.parse_literal(),
             TType::Bind => self.parse_bind(),
             TType::Struct => self.parse_struct_expr(),
-            TType::Fn => self.parse_fn_expr(),
+            TType::Fn => self.parse_lambda_expr(),
             TType::If => self.parse_if_expr(),
             TType::While => self.parse_while_expr(),
             TType::Return => self.parse_return(),

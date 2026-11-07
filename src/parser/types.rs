@@ -72,10 +72,7 @@ impl Parser {
             TType::Asterisk => self.parse_pointer_type(),
             TType::Fn => self.parse_function_pointer_type(),
             _ => {
-                self.report(
-                    format!("Invalid type token {:?}", ty_token.token_type),
-                    Some(span.clone()),
-                );
+                self.report(format!("expected a type"), Some(span.clone()));
                 None
             }
         }

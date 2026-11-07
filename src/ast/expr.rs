@@ -33,7 +33,7 @@ pub enum ASTExprKind {
     Lambda {
         params: Vec<ASTParam>,
         ret_ty: Option<ASTType>,
-        body: Box<ASTExpr>,
+        body: Option<Box<ASTExpr>>,
     },
     Struct {
         members: Vec<ASTParam>,
