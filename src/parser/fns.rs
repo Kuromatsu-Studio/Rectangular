@@ -17,7 +17,7 @@ struct FnSignature {
 }
 
 impl Parser {
-    fn parse_fn_signature(&mut self) -> Option<FnSignature> {
+    fn parse_lambda_signature(&mut self) -> Option<FnSignature> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Fn)?;
         self.expect_token(TType::Lparen)?;
@@ -63,8 +63,8 @@ impl Parser {
         })
     }
 
-    pub fn parse_fn_expr(&mut self) -> Option<ASTExpr> {
-        let sig = self.parse_fn_signature()?;
+    pub fn parse_lambda_expr(&mut self) -> Option<ASTExpr> {
+        let sig = self.parse_lambda_signature()?;
 
         let mut saw_named = false;
         let mut saw_bare = false;
@@ -84,17 +84,15 @@ impl Parser {
             }
         }
 
-        let is_lambda = self.current_token()?.token_type == TType::Arrow;
-
-        if is_lambda {
+        if self.current_token()?.token_type == TType::Arrow {
             if saw_bare {
                 self.report(
                     "lambda parameters need a name: 'name: Type'".to_string(),
                     Some(Span::new(sig.start, self.last_end)),
                 );
             }
+            self.advance();
 
-            self.expect_token(TType::Arrow)?;
             let body = self.parse_expr(Precedence::Lowest)?;
             let end = self.last_end;
             let span = Span::new(sig.start, end);
@@ -103,45 +101,45 @@ impl Parser {
                 ASTExprKind::Lambda {
                     params,
                     ret_ty: sig.ret_ty,
-                    body: Box::new(body),
+                    body: Some(Box::new(body)),
                 },
                 span,
             ));
-        }
+        } else {
+            let ret_ty = match sig.ret_ty {
+                Some(ty) => ty,
+                None => {
+                    self.report(
+                        "lambda types and declarations must always have a return type annotation"
+                            .to_string(),
+                        Some(Span::new(sig.start, self.last_end)),
+                    );
+                    return None;
+                }
+            };
 
-        if saw_named {
-            self.report(
-                "function type parameters must be types, not named parameters".to_string(),
-                Some(Span::new(sig.start, self.last_end)),
-            );
-        }
-
-        let ret_ty = match sig.ret_ty {
-            Some(ty) => ty,
-            None => {
-                let message = if saw_named {
-                    "expected '->' after lambda parameters"
-                } else {
-                    "function type requires a return type: fn(...): T"
-                };
-                self.report(
-                    message.to_string(),
-                    Some(Span::new(sig.start, self.last_end)),
+            let end = self.last_end;
+            let span = Span::new(sig.start, end);
+            if saw_named {
+                return Some(ASTExpr::new(
+                    ASTExprKind::Lambda {
+                        params,
+                        ret_ty: Some(ret_ty),
+                        body: None,
+                    },
+                    span,
+                ));
+            } else {
+                let ty = ASTType::new(
+                    ASTTypeKind::FunctionPtr {
+                        type_params,
+                        return_type: Box::new(ret_ty),
+                    },
+                    span.clone(),
                 );
-                return None;
+
+                return Some(ASTExpr::new(ASTExprKind::TypeExpr(Box::new(ty)), span));
             }
         };
-
-        let end = self.last_end;
-        let span = Span::new(sig.start, end);
-        let ty = ASTType::new(
-            ASTTypeKind::FunctionPtr {
-                type_params,
-                return_type: Box::new(ret_ty),
-            },
-            span.clone(),
-        );
-
-        Some(ASTExpr::new(ASTExprKind::TypeExpr(Box::new(ty)), span))
     }
 }
