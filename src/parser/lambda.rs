@@ -28,11 +28,13 @@ impl Parser {
                 break;
             }
 
-            let named = self.current_token()?.token_type == TType::Identifier
-                && self
-                    .peek_token()
-                    .map(|t| t.token_type == TType::Colon)
-                    .unwrap_or(false);
+            let current = self.current_token()?.token_type.clone();
+            let named = current == TType::At
+                || (current == TType::Identifier
+                    && self
+                        .peek_token()
+                        .map(|t| t.token_type == TType::Colon)
+                        .unwrap_or(false));
 
             if named {
                 params.push(FnParam::Named(self.parse_param()?));

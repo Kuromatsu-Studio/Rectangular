@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ASTParam {
+    pub attributes: Vec<ASTExpr>,
     pub name: Box<ASTExpr>,
     pub ty: Box<ASTType>,
 }
@@ -55,6 +56,7 @@ pub enum ASTExprKind {
         attributes: Vec<ASTExpr>,
         binding: Box<ASTExpr>,
     },
+    Defer(Box<ASTExpr>),
     Dereference(Box<ASTExpr>),
     AddressOf(Box<ASTExpr>),
     TypeExpr(Box<ASTType>),

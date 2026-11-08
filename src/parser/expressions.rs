@@ -28,11 +28,51 @@ impl Parser {
         Some(left)
     }
 
+    fn parse_attribute_list(&mut self) -> Option<Vec<ASTExpr>> {
+        let mut attributes = Vec::new();
+        self.expect_token(TType::At)?;
+        self.expect_token(TType::Lparen)?;
+        loop {
+            if self.current_token()?.token_type == TType::Rparen {
+                break;
+            }
+
+            let attribute = self.parse_expr(Precedence::Lowest)?;
+            match attribute.kind {
+                ASTExprKind::Identifier(_)
+                | ASTExprKind::Call(_, _)
+                | ASTExprKind::Access(_, _) => (),
+                _ => {
+                    self.report(
+                        "attributes must only be identifiers, access or calls".to_string(),
+                        Some(attribute.span.clone()),
+                    );
+                    break;
+                }
+            }
+            attributes.push(attribute);
+            if self.current_token()?.token_type == TType::Comma {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        self.expect_token(TType::Rparen)?;
+        Some(attributes)
+    }
+
     pub fn parse_param(&mut self) -> Option<ASTParam> {
+        let attributes = if self.current_token()?.token_type == TType::At {
+            self.parse_attribute_list()?
+        } else {
+            Vec::new()
+        };
+
         let name = self.parse_identifier()?;
         self.expect_token(TType::Colon)?;
         let ty = self.parse_type()?;
         Some(ASTParam {
+            attributes,
             name: Box::new(name),
             ty: Box::new(ty),
         })
@@ -142,6 +182,9 @@ impl Parser {
         self.expect_token(TType::Lbracket)?;
         let mut elements = Vec::new();
         loop {
+            if self.current_token()?.token_type == TType::Rbracket {
+                break;
+            }
             let expr = self.parse_expr(Precedence::Lowest)?;
             elements.push(expr);
             if self.current_token()?.token_type == TType::Comma {
@@ -235,6 +278,7 @@ impl Parser {
             TType::If => self.parse_if_expr(),
             TType::While => self.parse_while_expr(),
             TType::Return => self.parse_return(),
+            TType::Defer => self.parse_defer_expr(),
             TType::Break => {
                 let span = self.current_token()?.span.clone();
                 self.advance();
@@ -448,6 +492,10 @@ impl Parser {
         self.expect_token(TType::Lparen)?;
 
         loop {
+            if self.current_token()?.token_type == TType::Rparen {
+                break;
+            }
+
             let expr = self.parse_expr(Precedence::Lowest)?;
             args.push(expr);
 
@@ -543,35 +591,30 @@ impl Parser {
         ))
     }
 
+    fn parse_defer_expr(&mut self) -> Option<ASTExpr> {
+        let start = self.current_token()?.span.start;
+        self.expect_token(TType::Defer)?;
+        let expr = self.parse_expr(Precedence::Lowest)?;
+        match expr.kind {
+            ASTExprKind::Break | ASTExprKind::Return(_) | ASTExprKind::Continue => {
+                self.report(
+                    "Cannot defer control flow expressions like (return, break, and continue)"
+                        .to_string(),
+                    Some(expr.span.clone()),
+                );
+            }
+            _ => (),
+        };
+        let end = self.last_end;
+        let span = Span::new(start, end);
+
+        Some(ASTExpr::new(ASTExprKind::Defer(Box::new(expr)), span))
+    }
+
     fn parse_attributed_expr(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
-        self.expect_token(TType::At)?;
-        self.expect_token(TType::Lparen)?;
-        let mut attributes = Vec::new();
-        loop {
-            if self.current_token()?.token_type == TType::Rparen {
-                break;
-            }
+        let attributes = self.parse_attribute_list()?;
 
-            let attribute = self.parse_expr(Precedence::Lowest)?;
-            match attribute.kind {
-                ASTExprKind::Identifier(_) | ASTExprKind::Call(_, _) => (),
-                _ => {
-                    self.report(
-                        "attributes must only be identifiers or calls".to_string(),
-                        Some(attribute.span.clone()),
-                    );
-                    break;
-                }
-            }
-            attributes.push(attribute);
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            } else {
-                break;
-            }
-        }
-        self.expect_token(TType::Rparen)?;
         if self.current_token()?.token_type == TType::Semicolon {
             self.advance();
         }
