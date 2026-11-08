@@ -1,5 +1,5 @@
 mod expressions;
-mod fns;
+mod lambda;
 mod literals;
 mod parser;
 mod types;

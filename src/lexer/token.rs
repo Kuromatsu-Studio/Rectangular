@@ -69,7 +69,7 @@ pub enum TType {
     Char32Literal,
 
     ///keywords
-    Macro,
+    Defer,
     Fn,
     Type,
     Return,

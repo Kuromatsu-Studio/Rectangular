@@ -144,7 +144,20 @@ impl fmt::Display for ASTType {
 
 impl fmt::Display for ASTParam {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Param {}: {}", self.name.as_ref(), self.ty.as_ref())
+        write!(f, "Param")?;
+
+        if !self.attributes.is_empty() {
+            write!(f, " [")?;
+            for (i, attribute) in self.attributes.iter().enumerate() {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{}", attribute)?;
+            }
+            write!(f, "]")?;
+        }
+
+        write!(f, " {}: {}", self.name.as_ref(), self.ty.as_ref())
     }
 }
 
@@ -186,6 +199,15 @@ impl ASTExpr {
                 indent(f, depth)?;
                 writeln!(f, "Dereference @ {} {{", self.span)?;
                 inner.fmt_pretty(f, depth + 1)?;
+                writeln!(f)?;
+                indent(f, depth)?;
+                write!(f, "}}")
+            }
+
+            ASTExprKind::Defer(expr) => {
+                indent(f, depth)?;
+                writeln!(f, "Deref @ {} {{", self.span)?;
+                expr.fmt_pretty(f, depth + 1)?;
                 writeln!(f)?;
                 indent(f, depth)?;
                 write!(f, "}}")

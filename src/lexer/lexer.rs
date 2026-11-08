@@ -29,6 +29,7 @@ impl<'a> Lexer<'a> {
 
     fn load_keywords() -> HashMap<String, TType> {
         let keywords = HashMap::from([
+            ("defer".to_string(), TType::Defer),
             ("true".to_string(), TType::True),
             ("false".to_string(), TType::False),
             ("return".to_string(), TType::Return),

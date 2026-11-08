@@ -68,7 +68,8 @@ impl ASTType {
             | TType::Asterisk
             | TType::Identifier
             | TType::Fn
-            | TType::U0Key => true,
+            | TType::U0Key
+            | TType::Lbracket => true,
             _ => false,
         }
     }
