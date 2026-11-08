@@ -27,7 +27,7 @@ pub enum ASTExprKind {
     Unary(UnaryOp, Box<ASTExpr>),
     Block(Vec<ASTExpr>),
     Bind {
-        names: Vec<ASTExpr>,
+        name: Box<ASTExpr>,
         ty: Option<ASTType>,
         init: Option<Box<ASTExpr>>,
     },

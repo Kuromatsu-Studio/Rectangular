@@ -296,17 +296,10 @@ impl ASTExpr {
                 write!(f, "")
             }
 
-            ASTExprKind::Bind { names, ty, init } => {
+            ASTExprKind::Bind { name, ty, init } => {
                 indent(f, depth)?;
-                write!(f, "Bind @ {} (names: [", self.span)?;
-                for (i, name) in names.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{}", name)?;
-                }
-                write!(f, "]")?;
-
+                write!(f, "Bind @ {} ", self.span)?;
+                name.fmt_pretty(f, depth)?;
                 if let Some(ty_val) = ty {
                     write!(f, ", type: {}", ty_val)?;
                 }

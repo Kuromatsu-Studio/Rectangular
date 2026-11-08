@@ -81,17 +81,8 @@ impl Parser {
     fn parse_bind(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         self.expect_token(TType::Bind)?;
-        let mut names = Vec::new();
 
-        loop {
-            let name = self.parse_identifier()?;
-            names.push(name);
-            if self.current_token()?.token_type == TType::Comma {
-                self.advance();
-            } else {
-                break;
-            }
-        }
+        let name = self.parse_identifier()?;
 
         let ty = if self.current_token()?.token_type == TType::Colon {
             self.advance();
@@ -110,7 +101,14 @@ impl Parser {
         let end = self.last_end;
         let span = Span::new(start, end);
 
-        Some(ASTExpr::new(ASTExprKind::Bind { names, ty, init }, span))
+        Some(ASTExpr::new(
+            ASTExprKind::Bind {
+                name: Box::new(name),
+                ty,
+                init,
+            },
+            span,
+        ))
     }
 
     fn parse_if_expr(&mut self) -> Option<ASTExpr> {
