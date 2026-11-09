@@ -126,3 +126,14 @@ fn keyword_fn() {
     assert_eq!(tokens[0].lexeme, "fn");
     assert_eq!(tokens[1].token_type, TType::End)
 }
+
+#[test]
+fn keyword_defer() {
+    let diag = make_diag("defer");
+    let mut lexer = make_lexer("defer", diag);
+    let tokens = lexer.tokenize();
+
+    assert_eq!(tokens[0].token_type, TType::Defer);
+    assert_eq!(tokens[0].lexeme, "defer");
+    assert_eq!(tokens[1].token_type, TType::End)
+}
