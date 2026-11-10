@@ -88,7 +88,7 @@ pub enum HirExprKind {
     Continue,
 }
 
-pub struct HirExpr {
+pub struct HIRExpr {
     id: ExprId,
     pub kind: HirExprKind,
     span: Span,
