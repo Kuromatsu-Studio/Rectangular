@@ -1,10 +1,7 @@
 use crate::{
-    ast::{ASTExpr, ASTType, ASTTypeKind},
+    ast::ASTExpr,
     diagnostics::{CompilerError, Diag, Span},
-    hir::{
-        hir::{ExprId, HIRModule, TypeNodeId},
-        types::{HIRType, HIRTypeKind, Prim},
-    },
+    hir::hir::{ExprId, HIRModule, TypeNodeId},
 };
 
 pub struct HIRLowering {

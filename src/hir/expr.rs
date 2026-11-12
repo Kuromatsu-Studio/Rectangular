@@ -4,18 +4,20 @@ use crate::{
     hir::hir::{AttrId, ExprId, TypeNodeId},
 };
 
+#[derive(Debug, Clone)]
 pub enum ComptimeKind {
     Read,     //$
     Evaluate, //$$
 }
 
+#[derive(Debug, Clone)]
 pub struct HIRParam {
     attributes: Vec<AttrId>,
     name: String,
     ty: TypeNodeId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum HirExprLiteral {
     I8(i8),
     U8(u8),
@@ -34,7 +36,8 @@ pub enum HirExprLiteral {
     Char32(char),
 }
 
-pub enum HirExprKind {
+#[derive(Debug, Clone)]
+pub enum HIRExprKind {
     Literal(HirExprLiteral),
     Identifier(String),
     Binary {
@@ -88,8 +91,15 @@ pub enum HirExprKind {
     Continue,
 }
 
+#[derive(Debug, Clone)]
 pub struct HIRExpr {
-    id: ExprId,
-    pub kind: HirExprKind,
+    pub id: ExprId,
+    pub kind: HIRExprKind,
     span: Span,
+}
+
+impl HIRExpr {
+    pub fn new(id: ExprId, kind: HIRExprKind, span: Span) -> HIRExpr {
+        HIRExpr { id, kind, span }
+    }
 }

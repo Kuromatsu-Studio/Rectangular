@@ -11,6 +11,7 @@ pub struct TypeNodeId(pub usize);
 #[derive(Debug)]
 pub struct TypeId(usize);
 
+#[derive(Debug, Clone)]
 pub struct AttrId(usize);
 
 ///This represents the entire module

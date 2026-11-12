@@ -33,7 +33,8 @@ impl HIRLowering {
             | ASTTypeKind::C16
             | ASTTypeKind::C32
             | ASTTypeKind::Bool
-            | ASTTypeKind::Unit => {
+            | ASTTypeKind::Unit
+            | ASTTypeKind::Type => {
                 let primitive = Prim::new(ty.kind);
                 HIRTypeKind::Primitive(primitive)
             }
@@ -62,12 +63,19 @@ impl HIRLowering {
                 }
             }
             ASTTypeKind::Path(path) => HIRTypeKind::Path(path),
+            ASTTypeKind::Array(ty, size) => {
+                let ty_id = self.lower_type(*ty)?.id;
+                let len_id = self.lower_expr(&*size)?.id;
+                HIRTypeKind::Array {
+                    ty: ty_id,
+                    length: len_id,
+                }
+            }
             ASTTypeKind::None => HIRTypeKind::Primitive(Prim::Error),
-
-            _ => {
+            /*_ => {
                 self.report("Unknown type node".to_string(), Some(span.clone()));
                 HIRTypeKind::Primitive(Prim::Error)
-            }
+            }*/
         };
 
         let hir_ty = HIRType::new(id, kind, span);
