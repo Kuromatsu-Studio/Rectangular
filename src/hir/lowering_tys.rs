@@ -11,7 +11,7 @@ use crate::{
 impl HIRLowering {
     fn push_type(&mut self, kind: HIRTypeKind, span: Span) -> TypeNodeId {
         let id = TypeNodeId(self.hir_module.types.len());
-        self.hir_module.types.push(HIRType { id, kind, span });
+        self.hir_module.types.push(HIRType::new(id, kind, span));
         id
     }
 
@@ -19,7 +19,7 @@ impl HIRLowering {
         tys.into_iter().map(|t| self.lower_type(t)).collect()
     }
 
-    fn lower_type(&mut self, ty: ASTType) -> Option<TypeNodeId> {
+    pub fn lower_type(&mut self, ty: ASTType) -> Option<TypeNodeId> {
         let span = ty.span.clone();
 
         let kind = match ty.kind {

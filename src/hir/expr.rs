@@ -93,9 +93,9 @@ pub enum HIRExprKind {
 
 #[derive(Debug)]
 pub struct HIRExpr {
-    pub id: ExprId,
-    pub kind: HIRExprKind,
-    pub span: Span,
+    id: ExprId,
+    kind: HIRExprKind,
+    span: Span,
 }
 
 impl HIRExpr {

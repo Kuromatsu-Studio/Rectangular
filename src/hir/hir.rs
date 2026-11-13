@@ -12,7 +12,7 @@ pub struct TypeNodeId(pub usize);
 pub struct TypeId(usize);
 
 #[derive(Debug, Clone, Copy)]
-pub struct AttrId(usize);
+pub struct AttrId(pub usize);
 
 ///This represents the entire module
 pub struct HIRModule {

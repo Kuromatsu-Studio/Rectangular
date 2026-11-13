@@ -1,9 +1,9 @@
 use crate::{
-    ast::{ASTExpr, ASTExprKind},
+    ast::{ASTExpr, ASTExprKind, ASTType},
     diagnostics::Span,
     hir::{
         expr::{HIRExpr, HIRExprKind},
-        hir::ExprId,
+        hir::{AttrId, ExprId},
         lowering::HIRLowering,
     },
 };
@@ -11,12 +11,39 @@ use crate::{
 impl HIRLowering {
     fn push_expr(&mut self, kind: HIRExprKind, span: Span) -> ExprId {
         let id = ExprId(self.hir_module.exprs.len());
-        self.hir_module.exprs.push(HIRExpr { id, kind, span });
+        self.hir_module.exprs.push(HIRExpr::new(id, kind, span));
         id
     }
 
-    fn expr_ids(&mut self, exprs: Vec<ASTExpr>) -> Option<Vec<ExprId>> {
+    pub fn expr_ids(&mut self, exprs: Vec<ASTExpr>) -> Option<Vec<ExprId>> {
         exprs.into_iter().map(|e| self.lower_expr(e)).collect()
+    }
+
+    fn bind_kind(
+        &mut self,
+        attrs: Vec<AttrId>,
+        name: ASTExpr,
+        ty: Option<ASTType>,
+        init: Option<Box<ASTExpr>>,
+    ) -> Option<HIRExprKind> {
+        let name = self.get_string(name)?;
+
+        let ty = match ty {
+            Some(t) => Some(self.lower_type(t)?),
+            None => None,
+        };
+
+        let init = match init {
+            Some(expr) => Some(self.lower_expr(*expr)?),
+            None => None,
+        };
+
+        Some(HIRExprKind::Bind {
+            attrs,
+            name,
+            ty,
+            init,
+        })
     }
 
     pub fn lower_expr(&mut self, expr: ASTExpr) -> Option<ExprId> {
@@ -55,25 +82,28 @@ impl HIRLowering {
                 let inner_id = self.lower_expr(*inner)?;
                 HIRExprKind::Dereference(inner_id)
             }
-            /*ASTExprKind::Bind { name, ty, init } => {
-                let name = self.lower_expr(&*name)?.id;
-                let ty_id = match ty {
-                    Some(t) => Some(self.lower_type(t)?.id),
-                    None => None,
-                };
+            ASTExprKind::Bind { name, ty, init } => self.bind_kind(Vec::new(), *name, ty, init)?,
+            ASTExprKind::Attributed {
+                attributes,
+                binding,
+            } => {
+                let attrs = self.attr_ids(attributes)?;
+                let binding_span = binding.span.clone();
+                let ASTExpr { kind, .. } = *binding;
 
-                let init = match init {
-                    Some(expr) => Some(self.lower_expr(&expr)?.id),
-                    None => None,
-                };
-
-                HIRExprKind::Bind {
-                    attrs: (),
-                    name: (),
-                    ty: (),
-                    init,
+                match kind {
+                    ASTExprKind::Bind { name, ty, init } => {
+                        self.bind_kind(attrs, *name, ty, init)?
+                    }
+                    _ => {
+                        self.report(
+                            "attributes can only be attached to a bind or parameter".to_string(),
+                            Some(binding_span),
+                        );
+                        return None;
+                    }
                 }
-            }*/
+            }
             ASTExprKind::WhileExpr { condition, body } => {
                 let cond_id = self.lower_expr(*condition)?;
                 let body_id = self.lower_expr(*body)?;
