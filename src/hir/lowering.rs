@@ -1,12 +1,10 @@
 use crate::{
     ast::ASTExpr,
     diagnostics::{CompilerError, Diag, Span},
-    hir::hir::{ExprId, HIRModule, TypeNodeId},
+    hir::hir::HIRModule,
 };
 
 pub struct HIRLowering {
-    type_id_counter: usize,
-    expr_id_counter: usize,
     ast: Vec<ASTExpr>,
     pub hir_module: HIRModule,
     diagnostics: Diag,
@@ -16,8 +14,6 @@ pub struct HIRLowering {
 impl HIRLowering {
     pub fn new(ast: Vec<ASTExpr>, diagnostics: Diag) -> HIRLowering {
         HIRLowering {
-            type_id_counter: 0,
-            expr_id_counter: 0,
             ast,
             hir_module: HIRModule::new(),
             diagnostics,
@@ -25,16 +21,13 @@ impl HIRLowering {
         }
     }
 
-    pub fn type_id(&mut self) -> TypeNodeId {
-        let id = TypeNodeId(self.type_id_counter);
-        self.type_id_counter += 1;
-        id
-    }
-
-    pub fn expr_id(&mut self) -> ExprId {
-        let id = ExprId(self.expr_id_counter);
-        self.expr_id_counter += 1;
-        id
+    pub fn lower(&mut self) {
+        let ast = std::mem::take(&mut self.ast);
+        for expr in ast {
+            if let Some(id) = self.lower_expr(expr) {
+                self.hir_module.roots.push(id);
+            }
+        }
     }
 
     pub fn report(&mut self, message: String, span: Option<Span>) {

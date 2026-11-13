@@ -1,7 +1,7 @@
 use crate::lexer::TType;
 
 ///This is represents binary operators
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum BinaryOp {
     Add,        //+
     Minus,      //-
@@ -106,7 +106,7 @@ impl BinaryOp {
 }
 
 ///This represents prefix operators
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum UnaryOp {
     Neg,    //-
     Not,    //`!`

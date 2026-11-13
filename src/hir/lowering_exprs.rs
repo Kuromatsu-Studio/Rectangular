@@ -1,5 +1,6 @@
 use crate::{
     ast::{ASTExpr, ASTExprKind},
+    diagnostics::Span,
     hir::{
         expr::{HIRExpr, HIRExprKind},
         hir::ExprId,
@@ -8,16 +9,18 @@ use crate::{
 };
 
 impl HIRLowering {
-    fn expr_ids(&self, exprs: Vec<ASTExpr>) -> Option<Vec<ExprId>> {
-        exprs
-            .iter()
-            .map(|e| self.lower_expr(e).map(|hirexpr| hirexpr.id))
-            .collect()
+    fn push_expr(&mut self, kind: HIRExprKind, span: Span) -> ExprId {
+        let id = ExprId(self.hir_module.exprs.len());
+        self.hir_module.exprs.push(HIRExpr { id, kind, span });
+        id
     }
 
-    pub fn lower_expr(&self, expr: &ASTExpr) -> Option<HIRExpr> {
+    fn expr_ids(&mut self, exprs: Vec<ASTExpr>) -> Option<Vec<ExprId>> {
+        exprs.into_iter().map(|e| self.lower_expr(e)).collect()
+    }
+
+    pub fn lower_expr(&mut self, expr: ASTExpr) -> Option<ExprId> {
         let span = expr.span.clone();
-        let id = self.expr_id();
 
         let kind = match expr.kind {
             ASTExprKind::Block(exprs) => {
@@ -25,8 +28,8 @@ impl HIRLowering {
                 HIRExprKind::Block(expr_ids)
             }
             ASTExprKind::Binary(left, op, right) => {
-                let left_id = self.lower_expr(&*left)?.id;
-                let right_id = self.lower_expr(&*right)?.id;
+                let left_id = self.lower_expr(*left)?;
+                let right_id = self.lower_expr(*right)?;
                 HIRExprKind::Binary {
                     op,
                     lhs: left_id,
@@ -34,20 +37,53 @@ impl HIRLowering {
                 }
             }
             ASTExprKind::Unary(op, operand) => {
-                let operand_id = self.lower_expr(&*&operand)?.id;
+                let operand_id = self.lower_expr(*operand)?;
                 HIRExprKind::Unary {
                     op,
                     operand: operand_id,
                 }
             }
             ASTExprKind::Defer(inner) => {
-                let inner_id = self.lower_expr(&*inner)?.id;
+                let inner_id = self.lower_expr(*inner)?;
                 HIRExprKind::Defer(inner_id)
+            }
+            ASTExprKind::Array(elements) => {
+                let elem_ids = self.expr_ids(elements)?;
+                HIRExprKind::Array(elem_ids)
+            }
+            ASTExprKind::Dereference(inner) => {
+                let inner_id = self.lower_expr(*inner)?;
+                HIRExprKind::Dereference(inner_id)
+            }
+            /*ASTExprKind::Bind { name, ty, init } => {
+                let name = self.lower_expr(&*name)?.id;
+                let ty_id = match ty {
+                    Some(t) => Some(self.lower_type(t)?.id),
+                    None => None,
+                };
+
+                let init = match init {
+                    Some(expr) => Some(self.lower_expr(&expr)?.id),
+                    None => None,
+                };
+
+                HIRExprKind::Bind {
+                    attrs: (),
+                    name: (),
+                    ty: (),
+                    init,
+                }
+            }*/
+            ASTExprKind::WhileExpr { condition, body } => {
+                let cond_id = self.lower_expr(*condition)?;
+                let body_id = self.lower_expr(*body)?;
+                HIRExprKind::While {
+                    condition: cond_id,
+                    body: body_id,
+                }
             }
         };
 
-        let hir_expr = HIRExpr::new(id, kind, span);
-        self.hir_module.exprs.push(hir_expr.clone());
-        Some(hir_expr)
+        Some(self.push_expr(kind, span))
     }
 }
