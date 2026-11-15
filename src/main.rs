@@ -1,4 +1,6 @@
-use rectangular::{ast::pretty_module, diagnostics::Diagnostics, lexer::Lexer, parser::Parser};
+use rectangular::{
+    ast::pretty_module, diagnostics::Diagnostics, hir::HIRLowering, lexer::Lexer, parser::Parser,
+};
 use std::{cell::RefCell, env, fs, rc::Rc};
 
 fn main() -> Result<(), std::io::Error> {
@@ -38,13 +40,23 @@ fn main() -> Result<(), std::io::Error> {
         std::process::exit(1);
     }
 
+    //Parser
     let mut parser = Parser::new(tokens, Rc::clone(&diagnostics));
     let ast = parser.parse();
     if parser.corrupted {
         diagnostics.borrow().dump();
         std::process::exit(1);
     }
-    println!("{}", pretty_module(ast));
+    println!("{}", pretty_module(&ast));
+
+    //HIR
+    let mut hir_lowering = HIRLowering::new(ast, Rc::clone(&diagnostics));
+    let hir = hir_lowering.lower();
+    if hir_lowering.corrupted {
+        diagnostics.borrow().dump();
+        std::process::exit(1);
+    }
+    println!("{}", rectangular::hir::pretty_module(&hir));
 
     Ok(())
 }

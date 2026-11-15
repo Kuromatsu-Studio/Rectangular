@@ -1,5 +1,6 @@
 use crate::{
     ast::{ASTType, ASTTypeKind},
+    diagnostics::Span,
     hir::{
         hir::TypeNodeId,
         lowering::HIRLowering,
@@ -8,15 +9,18 @@ use crate::{
 };
 
 impl HIRLowering {
-    fn type_ids(&mut self, tys: Vec<ASTType>) -> Option<Vec<TypeNodeId>> {
-        tys.into_iter()
-            .map(|t| self.lower_type(t).map(|ty| ty.id))
-            .collect()
+    fn push_type(&mut self, kind: HIRTypeKind, span: Span) -> TypeNodeId {
+        let id = TypeNodeId(self.hir_module.types.len());
+        self.hir_module.types.push(HIRType::new(id, kind, span));
+        id
     }
 
-    fn lower_type(&mut self, ty: ASTType) -> Option<HIRType> {
+    fn type_ids(&mut self, tys: Vec<ASTType>) -> Option<Vec<TypeNodeId>> {
+        tys.into_iter().map(|t| self.lower_type(t)).collect()
+    }
+
+    pub fn lower_type(&mut self, ty: ASTType) -> Option<TypeNodeId> {
         let span = ty.span.clone();
-        let id = self.type_id();
 
         let kind = match ty.kind {
             ASTTypeKind::I8
@@ -33,20 +37,21 @@ impl HIRLowering {
             | ASTTypeKind::C16
             | ASTTypeKind::C32
             | ASTTypeKind::Bool
-            | ASTTypeKind::Unit => {
+            | ASTTypeKind::Unit
+            | ASTTypeKind::Type => {
                 let primitive = Prim::new(ty.kind);
                 HIRTypeKind::Primitive(primitive)
             }
             ASTTypeKind::Pointer(inner) => {
                 let inner = self.lower_type(*inner)?;
-                HIRTypeKind::Pointer(inner.id)
+                HIRTypeKind::Pointer(inner)
             }
             ASTTypeKind::Applied { callee, args } => {
                 let hir_callee = self.lower_type(*callee)?;
                 let hir_args = self.type_ids(args)?;
 
                 HIRTypeKind::Applied {
-                    callee: hir_callee.id,
+                    callee: hir_callee,
                     args: hir_args,
                 }
             }
@@ -55,23 +60,28 @@ impl HIRLowering {
                 return_type,
             } => {
                 let params = self.type_ids(type_params)?;
-                let ret_ty = self.lower_type(*return_type)?.id;
+                let ret_ty = self.lower_type(*return_type)?;
                 HIRTypeKind::Function {
                     params,
                     return_ty: ret_ty,
                 }
             }
             ASTTypeKind::Path(path) => HIRTypeKind::Path(path),
+            ASTTypeKind::Array(ty, size) => {
+                let ty_id = self.lower_type(*ty)?;
+                let len_id = self.lower_expr(*size)?;
+                HIRTypeKind::Array {
+                    ty: ty_id,
+                    length: len_id,
+                }
+            }
             ASTTypeKind::None => HIRTypeKind::Primitive(Prim::Error),
-
-            _ => {
+            /*_ => {
                 self.report("Unknown type node".to_string(), Some(span.clone()));
                 HIRTypeKind::Primitive(Prim::Error)
-            }
+            }*/
         };
 
-        let hir_ty = HIRType::new(id, kind, span);
-        self.hir_module.types.push(hir_ty.clone());
-        Some(hir_ty)
+        Some(self.push_type(kind, span))
     }
 }

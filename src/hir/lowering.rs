@@ -1,26 +1,19 @@
 use crate::{
-    ast::{ASTExpr, ASTType, ASTTypeKind},
+    ast::{ASTExpr, ASTExprKind},
     diagnostics::{CompilerError, Diag, Span},
-    hir::{
-        hir::{ExprId, HIRModule, TypeNodeId},
-        types::{HIRType, HIRTypeKind, Prim},
-    },
+    hir::hir::HIRModule,
 };
 
 pub struct HIRLowering {
-    type_id_counter: usize,
-    expr_id_counter: usize,
     ast: Vec<ASTExpr>,
     pub hir_module: HIRModule,
     diagnostics: Diag,
-    corrupted: bool,
+    pub corrupted: bool,
 }
 
 impl HIRLowering {
     pub fn new(ast: Vec<ASTExpr>, diagnostics: Diag) -> HIRLowering {
         HIRLowering {
-            type_id_counter: 0,
-            expr_id_counter: 0,
             ast,
             hir_module: HIRModule::new(),
             diagnostics,
@@ -28,16 +21,28 @@ impl HIRLowering {
         }
     }
 
-    pub fn type_id(&mut self) -> TypeNodeId {
-        let id = TypeNodeId(self.type_id_counter);
-        self.type_id_counter += 1;
-        id
+    pub fn lower(&mut self) -> HIRModule {
+        let ast = std::mem::take(&mut self.ast);
+        for expr in ast {
+            if let Some(id) = self.lower_expr(expr) {
+                self.hir_module.roots.push(id);
+            }
+        }
+        std::mem::replace(&mut self.hir_module, HIRModule::new())
     }
 
-    pub fn expr_id(&mut self) -> ExprId {
-        let id = ExprId(self.expr_id_counter);
-        self.expr_id_counter += 1;
-        id
+    pub fn get_string(&mut self, expr: ASTExpr) -> Option<String> {
+        let span = expr.span.clone();
+        match expr.kind {
+            ASTExprKind::Identifier(name) => Some(name),
+            _ => {
+                self.report(
+                    "Cannot extract string from invalid node".to_string(),
+                    Some(span),
+                );
+                None
+            }
+        }
     }
 
     pub fn report(&mut self, message: String, span: Option<Span>) {

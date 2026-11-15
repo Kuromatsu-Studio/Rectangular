@@ -4,19 +4,27 @@ use crate::{
     hir::hir::{AttrId, ExprId, TypeNodeId},
 };
 
+#[derive(Debug)]
 pub enum ComptimeKind {
     Read,     //$
     Evaluate, //$$
 }
 
+#[derive(Debug)]
 pub struct HIRParam {
-    attributes: Vec<AttrId>,
-    name: String,
-    ty: TypeNodeId,
+    pub attributes: Vec<AttrId>,
+    pub name: String,
+    pub ty: TypeNodeId,
 }
 
 #[derive(Debug)]
-pub enum HirExprLiteral {
+pub struct ConstructorMember {
+    pub name: String,
+    pub val: ExprId,
+}
+
+#[derive(Debug)]
+pub enum HIRExprLiteral {
     I8(i8),
     U8(u8),
     I16(i16),
@@ -34,8 +42,9 @@ pub enum HirExprLiteral {
     Char32(char),
 }
 
-pub enum HirExprKind {
-    Literal(HirExprLiteral),
+#[derive(Debug)]
+pub enum HIRExprKind {
+    Literal(HIRExprLiteral),
     Identifier(String),
     Binary {
         op: BinaryOp,
@@ -45,6 +54,15 @@ pub enum HirExprKind {
     While {
         condition: ExprId,
         body: ExprId,
+    },
+    If {
+        condition: ExprId,
+        if_body: ExprId,
+        else_body: Option<ExprId>,
+    },
+    Access {
+        left: ExprId,
+        right: ExprId,
     },
     Unary {
         op: UnaryOp,
@@ -77,6 +95,13 @@ pub enum HirExprKind {
         params: Vec<HIRParam>,
         ret: TypeNodeId,
     },
+    Struct {
+        members: Vec<HIRParam>,
+    },
+    Constructor {
+        name: String,
+        members: Vec<ConstructorMember>,
+    },
     TypeValue(TypeNodeId),
     Array(Vec<ExprId>),
     Block(Vec<ExprId>),
@@ -88,8 +113,15 @@ pub enum HirExprKind {
     Continue,
 }
 
+#[derive(Debug)]
 pub struct HIRExpr {
-    id: ExprId,
-    pub kind: HirExprKind,
-    span: Span,
+    pub id: ExprId,
+    pub kind: HIRExprKind,
+    pub span: Span,
+}
+
+impl HIRExpr {
+    pub fn new(id: ExprId, kind: HIRExprKind, span: Span) -> HIRExpr {
+        HIRExpr { id, kind, span }
+    }
 }

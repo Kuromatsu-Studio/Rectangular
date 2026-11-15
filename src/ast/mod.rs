@@ -6,5 +6,4 @@ mod types;
 pub use ast::{BinaryOp, Precedence, UnaryOp};
 pub use expr::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam};
 pub use printer::pretty_module;
-//pub use stmt::{ASTParam, ASTStmt, FuncTarget, StmtKind};
 pub use types::{ASTType, ASTTypeKind};

@@ -1,19 +1,21 @@
 use crate::hir::{attrs::HIRAttr, expr::HIRExpr, types::HIRType};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ExprId(pub usize);
 
 ///This is an id to the actual type node like the node i32
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TypeNodeId(pub usize);
 
 ///This is an id to the type like all i32's getting a type_id of 0
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct TypeId(usize);
 
-pub struct AttrId(usize);
+#[derive(Debug, Clone, Copy)]
+pub struct AttrId(pub usize);
 
 ///This represents the entire module
+#[derive(Debug)]
 pub struct HIRModule {
     pub exprs: Vec<HIRExpr>,
     pub types: Vec<HIRType>,

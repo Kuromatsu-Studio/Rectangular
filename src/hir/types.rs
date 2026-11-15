@@ -4,7 +4,7 @@ use crate::{
     hir::hir::{ExprId, TypeNodeId},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Prim {
     I8,
     U8,
@@ -25,7 +25,7 @@ pub enum Prim {
     Error,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum HIRTypeKind {
     Primitive(Prim),
     Path(Vec<String>),
@@ -44,7 +44,7 @@ pub enum HIRTypeKind {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HIRType {
     pub id: TypeNodeId,
     pub kind: HIRTypeKind,
