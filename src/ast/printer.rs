@@ -521,7 +521,7 @@ impl fmt::Display for ASTExpr {
     }
 }
 
-pub fn pretty_module(exprs: Vec<ASTExpr>) -> String {
+pub fn pretty_module(exprs: &Vec<ASTExpr>) -> String {
     let mut out = String::new();
     for (i, stmt) in exprs.iter().enumerate() {
         if i > 0 {

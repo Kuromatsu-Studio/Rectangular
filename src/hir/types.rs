@@ -46,9 +46,9 @@ pub enum HIRTypeKind {
 
 #[derive(Debug)]
 pub struct HIRType {
-    id: TypeNodeId,
-    kind: HIRTypeKind,
-    span: Span,
+    pub id: TypeNodeId,
+    pub kind: HIRTypeKind,
+    pub span: Span,
 }
 
 impl Prim {

@@ -8,7 +8,6 @@ use crate::{
 pub enum ComptimeKind {
     Read,     //$
     Evaluate, //$$
-    None,     // no comptime
 }
 
 #[derive(Debug)]
@@ -16,6 +15,12 @@ pub struct HIRParam {
     pub attributes: Vec<AttrId>,
     pub name: String,
     pub ty: TypeNodeId,
+}
+
+#[derive(Debug)]
+pub struct ConstructorMember {
+    pub name: String,
+    pub val: ExprId,
 }
 
 #[derive(Debug)]
@@ -50,6 +55,15 @@ pub enum HIRExprKind {
         condition: ExprId,
         body: ExprId,
     },
+    If {
+        condition: ExprId,
+        if_body: ExprId,
+        else_body: Option<ExprId>,
+    },
+    Access {
+        left: ExprId,
+        right: ExprId,
+    },
     Unary {
         op: UnaryOp,
         operand: ExprId,
@@ -81,6 +95,13 @@ pub enum HIRExprKind {
         params: Vec<HIRParam>,
         ret: TypeNodeId,
     },
+    Struct {
+        members: Vec<HIRParam>,
+    },
+    Constructor {
+        name: String,
+        members: Vec<ConstructorMember>,
+    },
     TypeValue(TypeNodeId),
     Array(Vec<ExprId>),
     Block(Vec<ExprId>),
@@ -94,9 +115,9 @@ pub enum HIRExprKind {
 
 #[derive(Debug)]
 pub struct HIRExpr {
-    id: ExprId,
-    kind: HIRExprKind,
-    span: Span,
+    pub id: ExprId,
+    pub kind: HIRExprKind,
+    pub span: Span,
 }
 
 impl HIRExpr {

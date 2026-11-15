@@ -1,8 +1,8 @@
 use crate::{
-    ast::{ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType},
+    ast::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTExprLiteral, ASTParam, ASTType},
     diagnostics::Span,
     hir::{
-        expr::{ComptimeKind, HIRExpr, HIRExprKind, HIRExprLiteral, HIRParam},
+        expr::{ComptimeKind, ConstructorMember, HIRExpr, HIRExprKind, HIRExprLiteral, HIRParam},
         hir::{AttrId, ExprId},
         lowering::HIRLowering,
     },
@@ -63,6 +63,22 @@ impl HIRLowering {
                     rhs: right_id,
                 }
             }
+            ASTExprKind::Call(name, args) => {
+                let name_id = self.lower_expr(*name)?;
+                let hir_args = self.expr_ids(args)?;
+                HIRExprKind::Call {
+                    callee: name_id,
+                    args: hir_args,
+                }
+            }
+            ASTExprKind::Access(left, right) => {
+                let left_id = self.lower_expr(*left)?;
+                let right_id = self.lower_expr(*right)?;
+                HIRExprKind::Access {
+                    left: left_id,
+                    right: right_id,
+                }
+            }
             ASTExprKind::Unary(op, operand) => {
                 let operand_id = self.lower_expr(*operand)?;
                 HIRExprKind::Unary {
@@ -81,6 +97,10 @@ impl HIRLowering {
             ASTExprKind::Dereference(inner) => {
                 let inner_id = self.lower_expr(*inner)?;
                 HIRExprKind::Dereference(inner_id)
+            }
+            ASTExprKind::TypeExpr(ty) => {
+                let ty_id = self.lower_type(*ty)?;
+                HIRExprKind::TypeValue(ty_id)
             }
             ASTExprKind::Bind { name, ty, init } => self.bind_kind(Vec::new(), *name, ty, init)?,
             ASTExprKind::Attributed {
@@ -102,6 +122,23 @@ impl HIRLowering {
                         );
                         return None;
                     }
+                }
+            }
+            ASTExprKind::IfExpr {
+                condition,
+                if_body,
+                else_body,
+            } => {
+                let cond = self.lower_expr(*condition)?;
+                let if_bod = self.lower_expr(*if_body)?;
+                let el_body = match else_body {
+                    Some(el) => Some(self.lower_expr(*el)?),
+                    None => None,
+                };
+                HIRExprKind::If {
+                    condition: cond,
+                    if_body: if_bod,
+                    else_body: el_body,
                 }
             }
             ASTExprKind::WhileExpr { condition, body } => {
@@ -164,12 +201,54 @@ impl HIRLowering {
                     },
                 }
             }
-            ASTExprKind::DollarExpr(inner) | ASTExprKind::DoubleDollar(inner) => {
-                let comptime_kind = self.get_comptimekind(expr);
-                let expr_id = self.lower_expr(*inner)?;
+            ASTExprKind::DollarExpr(inner) => {
+                let inner_id = self.lower_expr(*inner)?;
                 HIRExprKind::Comptime {
-                    kind: comptime_kind,
-                    expr: expr_id,
+                    kind: ComptimeKind::Read,
+                    expr: inner_id,
+                }
+            }
+            ASTExprKind::DoubleDollar(inner) => {
+                let inner_id = self.lower_expr(*inner)?;
+                HIRExprKind::Comptime {
+                    kind: ComptimeKind::Evaluate,
+                    expr: inner_id,
+                }
+            }
+            ASTExprKind::AddressOf(inner) => {
+                let inner_id = self.lower_expr(*inner)?;
+                HIRExprKind::AddressOf(inner_id)
+            }
+            ASTExprKind::Index(base, index) => {
+                let hir_base = self.lower_expr(*base)?;
+                let hir_index = self.lower_expr(*index)?;
+                HIRExprKind::Index {
+                    base: hir_base,
+                    index: hir_index,
+                }
+            }
+            ASTExprKind::Struct { members } => {
+                let struct_members = members
+                    .into_iter()
+                    .map(|p| self.lower_param(p))
+                    .collect::<Option<Vec<_>>>()?;
+
+                HIRExprKind::Struct {
+                    members: struct_members,
+                }
+            }
+            ASTExprKind::Identifier(ident) => HIRExprKind::Identifier(ident),
+            ASTExprKind::StructConstructor { name, members } => {
+                let name = self.get_string(*name)?;
+
+                let struct_members = members
+                    .into_iter()
+                    .map(|m| self.lower_constructor_member(m))
+                    .collect::<Option<Vec<_>>>()?;
+
+                HIRExprKind::Constructor {
+                    name,
+                    members: struct_members,
                 }
             }
         };
@@ -177,16 +256,14 @@ impl HIRLowering {
         Some(self.push_expr(kind, span))
     }
 
-    fn get_comptimekind(&mut self, expr: ASTExpr) -> ComptimeKind {
-        let span = expr.span.clone();
-        match expr.kind {
-            ASTExprKind::DollarExpr(_) => ComptimeKind::Read,
-            ASTExprKind::DoubleDollar(_) => ComptimeKind::Evaluate,
-            _ => {
-                self.report("Invalid comptime expression".to_string(), Some(span));
-                ComptimeKind::None
-            }
-        }
+    fn lower_constructor_member(
+        &mut self,
+        member: ASTConstructorMember,
+    ) -> Option<ConstructorMember> {
+        let name = self.get_string(*member.name)?;
+        let val = self.lower_expr(*member.val)?;
+
+        Some(ConstructorMember { name, val })
     }
 
     fn lower_param(&mut self, param: ASTParam) -> Option<HIRParam> {

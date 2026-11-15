@@ -15,6 +15,7 @@ pub struct TypeId(usize);
 pub struct AttrId(pub usize);
 
 ///This represents the entire module
+#[derive(Debug)]
 pub struct HIRModule {
     pub exprs: Vec<HIRExpr>,
     pub types: Vec<HIRType>,

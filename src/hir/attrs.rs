@@ -5,10 +5,10 @@ use crate::{
 
 #[derive(Debug)]
 pub struct HIRAttr {
-    id: AttrId,
-    path: Vec<String>,
-    args: Vec<ExprId>,
-    span: Span,
+    pub id: AttrId,
+    pub path: Vec<String>,
+    pub args: Vec<ExprId>,
+    pub span: Span,
 }
 
 impl HIRAttr {
