@@ -8,17 +8,18 @@ use crate::{
 pub enum ComptimeKind {
     Read,     //$
     Evaluate, //$$
+    None,     // no comptime
 }
 
 #[derive(Debug)]
 pub struct HIRParam {
-    attributes: Vec<AttrId>,
-    name: String,
-    ty: TypeNodeId,
+    pub attributes: Vec<AttrId>,
+    pub name: String,
+    pub ty: TypeNodeId,
 }
 
 #[derive(Debug)]
-pub enum HirExprLiteral {
+pub enum HIRExprLiteral {
     I8(i8),
     U8(u8),
     I16(i16),
@@ -38,7 +39,7 @@ pub enum HirExprLiteral {
 
 #[derive(Debug)]
 pub enum HIRExprKind {
-    Literal(HirExprLiteral),
+    Literal(HIRExprLiteral),
     Identifier(String),
     Binary {
         op: BinaryOp,
