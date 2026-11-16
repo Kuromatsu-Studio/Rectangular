@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 pub fn make_diag(source: &str) -> Diag {
     Rc::new(RefCell::new(Diagnostics::new(
-                "test.rgl".to_string(), 
+                "test.rect".to_string(), 
                 source.to_string(),
             )))
 }
