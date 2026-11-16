@@ -263,7 +263,11 @@ impl HIRLowering {
         let name = self.get_string(*member.name)?;
         let val = self.lower_expr(*member.val)?;
 
-        Some(ConstructorMember { name, val })
+        Some(ConstructorMember {
+            name,
+            val,
+            span: member.span,
+        })
     }
 
     fn lower_param(&mut self, param: ASTParam) -> Option<HIRParam> {
@@ -275,6 +279,7 @@ impl HIRLowering {
             attributes,
             name: param_name,
             ty: param_ty,
+            span: param.span,
         })
     }
 

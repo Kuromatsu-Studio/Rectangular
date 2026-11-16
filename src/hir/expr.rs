@@ -15,12 +15,14 @@ pub struct HIRParam {
     pub attributes: Vec<AttrId>,
     pub name: String,
     pub ty: TypeNodeId,
+    pub span: Span,
 }
 
 #[derive(Debug)]
 pub struct ConstructorMember {
     pub name: String,
     pub val: ExprId,
+    pub span: Span,
 }
 
 #[derive(Debug)]

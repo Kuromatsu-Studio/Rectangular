@@ -11,12 +11,14 @@ pub struct ASTParam {
     pub attributes: Vec<ASTExpr>,
     pub name: Box<ASTExpr>,
     pub ty: Box<ASTType>,
+    pub span: Span,
 }
 
 #[derive(Debug)]
 pub struct ASTConstructorMember {
     pub name: Box<ASTExpr>,
     pub val: Box<ASTExpr>,
+    pub span: Span,
 }
 
 ///The kind of expression u are dealing with

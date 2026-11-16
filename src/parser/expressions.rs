@@ -62,6 +62,7 @@ impl Parser {
     }
 
     pub fn parse_param(&mut self) -> Option<ASTParam> {
+        let start = self.current_token()?.span.start;
         let attributes = if self.current_token()?.token_type == TType::At {
             self.parse_attribute_list()?
         } else {
@@ -71,10 +72,13 @@ impl Parser {
         let name = self.parse_identifier()?;
         self.expect_token(TType::Colon)?;
         let ty = self.parse_type()?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
         Some(ASTParam {
             attributes,
             name: Box::new(name),
             ty: Box::new(ty),
+            span,
         })
     }
 
@@ -548,6 +552,20 @@ impl Parser {
         Some(ASTExpr::new(ASTExprKind::Struct { members }, span))
     }
 
+    fn parse_constructor_member(&mut self) -> Option<ASTConstructorMember> {
+        let start = self.current_token()?.span.start;
+        let member_name = self.parse_identifier()?;
+        self.expect_token(TType::Colon)?;
+        let value = self.parse_expr(Precedence::Lowest)?;
+        let end = self.last_end;
+        let span = Span::new(start, end);
+        Some(ASTConstructorMember {
+            name: Box::new(member_name),
+            val: Box::new(value),
+            span,
+        })
+    }
+
     fn parse_struct_constructor(&mut self) -> Option<ASTExpr> {
         let start = self.current_token()?.span.start;
         let name = self.parse_identifier()?;
@@ -560,14 +578,8 @@ impl Parser {
                 break;
             }
 
-            let member_name = self.parse_identifier()?;
-            self.expect_token(TType::Colon)?;
-            let value = self.parse_expr(Precedence::Lowest)?;
-
-            members.push(ASTConstructorMember {
-                name: Box::new(member_name),
-                val: Box::new(value),
-            });
+            let member = self.parse_constructor_member()?;
+            members.push(member);
 
             if self.current_token()?.token_type == TType::Comma {
                 self.advance();
