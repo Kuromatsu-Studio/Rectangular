@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
 use crate::{
-    diagnostics::Diag,
+    diagnostics::{CompilerError, Diag, Span},
     hir::{ExprId, HIRExpr, HIRExprKind, HIRModule},
 };
 
+#[derive(Clone, Copy)]
 pub struct DefId(usize);
-pub struct ScopeId(usize);
+
+#[derive(Clone, Copy)]
+pub struct ScopeId(pub usize);
 
 pub struct Scope {
     parent_scope_id: Option<ScopeId>,
@@ -28,6 +31,9 @@ pub struct Definition {
 pub struct Resolver {
     hir_module: HIRModule,
     diagnostics: Diag,
+    definitions: Vec<Definition>,
+    scopes: Vec<Scope>,
+    stack: Vec<ScopeId>,
     corrupted: bool,
 }
 
@@ -36,24 +42,106 @@ impl Resolver {
         Resolver {
             hir_module,
             diagnostics,
+            definitions: Vec::new(),
+            scopes: Vec::new(),
+            stack: Vec::new(),
             corrupted: false,
         }
     }
 
     pub fn resolve(&mut self) {
         let module = std::mem::take(&mut self.hir_module);
-        for expr in module.exprs {
-            self.define_and_resolve(expr);
+        self.push_scope();
+        for root in &module.roots {
+            self.resolve_expr(&module, *root);
+        }
+        self.pop_scope();
+
+        self.hir_module = module;
+    }
+
+    pub fn resolve_expr(&mut self, module: &HIRModule, root: ExprId) {
+        let expr = module.exprs.get(root.0);
+
+        match expr {
+            Some(e) => match &e.kind {
+                HIRExprKind::Block(exprs) => {
+                    self.push_scope();
+                    self.define_scope(module, exprs);
+                    for e in exprs {
+                        self.resolve_expr(module, *e);
+                    }
+                    self.pop_scope();
+                }
+                _ => (),
+            },
+            None => (),
         }
     }
 
-    pub fn define_and_resolve(&self, expr: HIRExpr) {
-        match expr.kind {
-            HIRExprKind::Block(exprs) => (),
-            HIRExprKind::Lambda { params, ret, body } => (),
-            _ => (),
+    fn push_scope(&mut self) {
+        let id = ScopeId(self.scopes.len());
+        let parent_scope_id = self.stack.last().copied();
+        let scope = Scope {
+            parent_scope_id,
+            scope_id: id,
+            names: HashMap::new(),
+        };
+        self.scopes.push(scope);
+        self.stack.push(id);
+    }
+
+    fn pop_scope(&mut self) {
+        self.stack.pop();
+    }
+
+    fn lookup(&self, name: &str) -> Option<DefId> {
+        for id in self.stack.iter().rev() {
+            if let Some(def) = self.scopes[id.0].names.get(name) {
+                return Some(*def);
+            }
+        }
+        None
+    }
+
+    fn define_expr(&mut self, expr: &HIRExpr, scope: ScopeId) {
+        let def_id = DefId(self.definitions.len());
+        let definition = match &expr.kind {
+            HIRExprKind::Bind { name, .. } => Definition {
+                id: def_id,
+                name: name.clone(),
+                scope,
+                kind: DefKind::Bind { id: expr.id },
+            },
+            _ => return,
+        };
+
+        self.scopes[scope.0]
+            .names
+            .insert(definition.name.clone(), def_id);
+
+        self.definitions.push(definition);
+    }
+
+    fn define_scope(&mut self, module: &HIRModule, exprs: &Vec<ExprId>) {
+        let current_scope_id = match self.stack.last() {
+            Some(id) => *id,
+            None => return,
+        };
+
+        for expr_id in exprs {
+            let expr = module.exprs.get(expr_id.0);
+            match expr {
+                Some(e) => self.define_expr(e, current_scope_id),
+                None => continue,
+            }
         }
     }
 
-    fn create_scope() {}
+    fn report(&mut self, message: String, span: Option<Span>) {
+        self.corrupted = true;
+        self.diagnostics
+            .borrow_mut()
+            .report(CompilerError::error(message, span, None));
+    }
 }
