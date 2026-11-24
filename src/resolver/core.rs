@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::{
     diagnostics::{CompilerError, Diag, Span},
     hir::{ExprId, HIRExprKind, HIRModule},
+    resolver::expr_chilren,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -123,13 +124,13 @@ impl Resolver {
                     }
                     self.refs[root.0] = def;
                 }
-                HIRExprKind::Bind { init, .. } => match init {
-                    Some(init) => self.resolve_expr(module, *init),
-                    None => (),
-                },
-                HIRExprKind::Literal(_) => (),
-
-                _ => todo!("Add resolution for other HIR expressions"),
+                _ => {
+                    let mut children = Vec::new();
+                    expr_chilren(e, &mut children);
+                    for child in children {
+                        self.resolve_expr(module, child);
+                    }
+                }
             },
             None => (),
         }

@@ -3,6 +3,7 @@ use crate::{
     resolver::{
         Resolver,
         core::{DefId, DefKind, Definition, ScopeId},
+        expr_chilren,
     },
 };
 
@@ -47,17 +48,25 @@ impl Resolver {
     }
 
     pub fn define_scope(&mut self, module: &HIRModule, exprs: &[ExprId]) {
-        let current_scope_id = match self.stack.last() {
+        let scope_id = match self.stack.last() {
             Some(id) => *id,
             None => return,
         };
 
-        for expr_id in exprs {
-            let expr = module.exprs.get(expr_id.0);
-            match expr {
-                Some(e) => self.define_expr(e, current_scope_id),
+        let mut pending = exprs.to_vec();
+        let mut children = Vec::new();
+
+        while let Some(id) = pending.pop() {
+            let expr = match module.exprs.get(id.0) {
+                Some(e) => e,
                 None => continue,
-            }
+            };
+
+            self.define_expr(expr, scope_id);
+
+            children.clear();
+            expr_chilren(expr, &mut children);
+            pending.extend(children.iter());
         }
     }
 }
