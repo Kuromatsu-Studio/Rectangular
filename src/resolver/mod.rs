@@ -5,7 +5,7 @@ pub use core::Resolver;
 
 use crate::hir::{ExprId, HIRExpr, HIRExprKind};
 
-pub fn expr_chilren(expr: &HIRExpr, out: &mut Vec<ExprId>) {
+pub fn expr_children(expr: &HIRExpr, out: &mut Vec<ExprId>) {
     match &expr.kind {
         HIRExprKind::Binary { lhs, rhs, .. } => {
             out.push(*lhs);

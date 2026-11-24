@@ -3,7 +3,7 @@ use crate::{
     resolver::{
         Resolver,
         core::{DefId, DefKind, Definition, ScopeId},
-        expr_chilren,
+        expr_children,
     },
 };
 
@@ -65,7 +65,7 @@ impl Resolver {
             self.define_expr(expr, scope_id);
 
             children.clear();
-            expr_chilren(expr, &mut children);
+            expr_children(expr, &mut children);
             pending.extend(children.iter());
         }
     }

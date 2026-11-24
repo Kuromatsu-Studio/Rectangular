@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     diagnostics::{CompilerError, Diag, Span},
     hir::{ExprId, HIRExprKind, HIRModule},
-    resolver::expr_chilren,
+    resolver::expr_children,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -126,7 +126,7 @@ impl Resolver {
                 }
                 _ => {
                     let mut children = Vec::new();
-                    expr_chilren(e, &mut children);
+                    expr_children(e, &mut children);
                     for child in children {
                         self.resolve_expr(module, child);
                     }
