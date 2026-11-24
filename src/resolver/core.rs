@@ -5,7 +5,7 @@ use crate::{
     hir::{ExprId, HIRExpr, HIRExprKind, HIRModule},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct DefId(usize);
 
 #[derive(Clone, Copy)]
@@ -34,6 +34,7 @@ pub struct Resolver {
     definitions: Vec<Definition>,
     scopes: Vec<Scope>,
     stack: Vec<ScopeId>,
+    pub refs: Vec<Option<DefId>>,
     corrupted: bool,
 }
 
@@ -45,13 +46,16 @@ impl Resolver {
             definitions: Vec::new(),
             scopes: Vec::new(),
             stack: Vec::new(),
+            refs: Vec::new(),
             corrupted: false,
         }
     }
 
     pub fn resolve(&mut self) {
         let module = std::mem::take(&mut self.hir_module);
+        self.refs = vec![None; module.exprs.len()];
         self.push_scope();
+        self.define_scope(&module, &module.roots);
         for root in &module.roots {
             self.resolve_expr(&module, *root);
         }
@@ -60,7 +64,7 @@ impl Resolver {
         self.hir_module = module;
     }
 
-    pub fn resolve_expr(&mut self, module: &HIRModule, root: ExprId) {
+    fn resolve_expr(&mut self, module: &HIRModule, root: ExprId) {
         let expr = module.exprs.get(root.0);
 
         match expr {
@@ -73,6 +77,17 @@ impl Resolver {
                     }
                     self.pop_scope();
                 }
+                HIRExprKind::Identifier(name) => {
+                    let def = self.lookup(name.as_str());
+                    if def.is_none() {
+                        self.report(format!("Undefined name '{}'", name), Some(e.span.clone()));
+                    }
+                    self.refs.insert(root.0, def);
+                }
+                HIRExprKind::Bind { init, .. } => match init {
+                    Some(init) => self.resolve_expr(module, *init),
+                    None => (),
+                },
                 _ => (),
             },
             None => (),
@@ -143,5 +158,9 @@ impl Resolver {
         self.diagnostics
             .borrow_mut()
             .report(CompilerError::error(message, span, None));
+    }
+
+    pub fn is_corrupted(&self) -> bool {
+        self.corrupted
     }
 }
