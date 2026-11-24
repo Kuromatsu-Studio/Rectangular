@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use crate::{
     diagnostics::{CompilerError, Diag, Span},
-    hir::{ExprId, HIRExpr, HIRExprKind, HIRModule},
+    hir::{ExprId, HIRExprKind, HIRModule},
 };
 
 #[derive(Debug, Clone, Copy)]
-pub struct DefId(usize);
+pub struct DefId(pub usize);
 
 #[derive(Clone, Copy)]
 pub struct ScopeId(pub usize);
@@ -14,26 +14,27 @@ pub struct ScopeId(pub usize);
 pub struct Scope {
     parent_scope_id: Option<ScopeId>,
     scope_id: ScopeId,
-    names: HashMap<String, DefId>,
+    pub names: HashMap<String, DefId>,
 }
 
 pub enum DefKind {
     Bind { id: ExprId },
+    Param { lambda: ExprId, index: usize },
 }
 
 pub struct Definition {
-    id: DefId,
-    scope: ScopeId,
-    name: String,
-    kind: DefKind,
+    pub id: DefId,
+    pub scope: ScopeId,
+    pub name: String,
+    pub kind: DefKind,
 }
 
 pub struct Resolver {
     hir_module: HIRModule,
     diagnostics: Diag,
-    definitions: Vec<Definition>,
-    scopes: Vec<Scope>,
-    stack: Vec<ScopeId>,
+    pub definitions: Vec<Definition>,
+    pub scopes: Vec<Scope>,
+    pub stack: Vec<ScopeId>,
     pub refs: Vec<Option<DefId>>,
     corrupted: bool,
 }
@@ -77,6 +78,44 @@ impl Resolver {
                     }
                     self.pop_scope();
                 }
+                HIRExprKind::Lambda { params, body, .. } => {
+                    self.push_scope();
+
+                    let scope_id = match self.stack.last() {
+                        Some(id) => *id,
+                        None => return,
+                    };
+
+                    for (index, param) in params.iter().enumerate() {
+                        if self.scopes[scope_id.0].names.contains_key(&param.name) {
+                            self.report(
+                                format!("Redefinition of '{}' in the same scope", param.name),
+                                Some(param.span.clone()),
+                            );
+                            continue;
+                        }
+
+                        let def_id = DefId(self.definitions.len());
+                        self.definitions.push(Definition {
+                            id: def_id,
+                            name: param.name.clone(),
+                            kind: DefKind::Param {
+                                lambda: root,
+                                index,
+                            },
+                            scope: scope_id,
+                        });
+
+                        self.scopes[scope_id.0]
+                            .names
+                            .insert(param.name.clone(), def_id);
+                    }
+
+                    self.define_scope(module, &[*body]);
+                    self.resolve_expr(module, *body);
+
+                    self.pop_scope();
+                }
                 HIRExprKind::Identifier(name) => {
                     let def = self.lookup(name.as_str());
                     if def.is_none() {
@@ -88,7 +127,9 @@ impl Resolver {
                     Some(init) => self.resolve_expr(module, *init),
                     None => (),
                 },
-                _ => (),
+                HIRExprKind::Literal(_) => (),
+
+                _ => todo!("Add resolution for other HIR expressions"),
             },
             None => (),
         }
@@ -110,61 +151,7 @@ impl Resolver {
         self.stack.pop();
     }
 
-    fn lookup(&self, name: &str) -> Option<DefId> {
-        for id in self.stack.iter().rev() {
-            if let Some(def) = self.scopes[id.0].names.get(name) {
-                return Some(*def);
-            }
-        }
-        None
-    }
-
-    fn define_expr(&mut self, expr: &HIRExpr, scope: ScopeId) {
-        let def_id = DefId(self.definitions.len());
-
-        let (name, kind) = match &expr.kind {
-            HIRExprKind::Bind { name, .. } => (name.clone(), DefKind::Bind { id: expr.id }),
-            _ => return,
-        };
-
-        if self.scopes[scope.0].names.contains_key(&name) {
-            self.report(
-                format!("Redefinition of '{}' in the same scope", name),
-                Some(expr.span.clone()),
-            );
-            return;
-        }
-
-        let definition = Definition {
-            id: def_id,
-            name: name.clone(),
-            scope,
-            kind,
-        };
-
-        self.scopes[scope.0]
-            .names
-            .insert(definition.name.clone(), def_id);
-
-        self.definitions.push(definition);
-    }
-
-    fn define_scope(&mut self, module: &HIRModule, exprs: &Vec<ExprId>) {
-        let current_scope_id = match self.stack.last() {
-            Some(id) => *id,
-            None => return,
-        };
-
-        for expr_id in exprs {
-            let expr = module.exprs.get(expr_id.0);
-            match expr {
-                Some(e) => self.define_expr(e, current_scope_id),
-                None => continue,
-            }
-        }
-    }
-
-    fn report(&mut self, message: String, span: Option<Span>) {
+    pub fn report(&mut self, message: String, span: Option<Span>) {
         self.corrupted = true;
         self.diagnostics
             .borrow_mut()
