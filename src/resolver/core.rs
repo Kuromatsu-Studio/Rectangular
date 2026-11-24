@@ -82,7 +82,7 @@ impl Resolver {
                     if def.is_none() {
                         self.report(format!("Undefined name '{}'", name), Some(e.span.clone()));
                     }
-                    self.refs.insert(root.0, def);
+                    self.refs[root.0] = def;
                 }
                 HIRExprKind::Bind { init, .. } => match init {
                     Some(init) => self.resolve_expr(module, *init),
@@ -121,14 +121,25 @@ impl Resolver {
 
     fn define_expr(&mut self, expr: &HIRExpr, scope: ScopeId) {
         let def_id = DefId(self.definitions.len());
-        let definition = match &expr.kind {
-            HIRExprKind::Bind { name, .. } => Definition {
-                id: def_id,
-                name: name.clone(),
-                scope,
-                kind: DefKind::Bind { id: expr.id },
-            },
+
+        let (name, kind) = match &expr.kind {
+            HIRExprKind::Bind { name, .. } => (name.clone(), DefKind::Bind { id: expr.id }),
             _ => return,
+        };
+
+        if self.scopes[scope.0].names.contains_key(&name) {
+            self.report(
+                format!("Redefinition of '{}' in the same scope", name),
+                Some(expr.span.clone()),
+            );
+            return;
+        }
+
+        let definition = Definition {
+            id: def_id,
+            name: name.clone(),
+            scope,
+            kind,
         };
 
         self.scopes[scope.0]
