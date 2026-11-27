@@ -26,11 +26,6 @@ pub fn expr_children(expr: &HIRExpr, out: &mut Vec<ExprId>) {
                 out.push(*el);
             }
         }
-        HIRExprKind::Bind { init, .. } => {
-            if let Some(init_expr) = init {
-                out.push(*init_expr);
-            }
-        }
         HIRExprKind::Unary { operand, .. } => out.push(*operand),
         HIRExprKind::Index { base, index } => {
             out.push(*base);
@@ -40,7 +35,8 @@ pub fn expr_children(expr: &HIRExpr, out: &mut Vec<ExprId>) {
             out.push(*callee);
             out.extend(args.iter());
         }
-        HIRExprKind::Constructor { members, .. } => {
+        HIRExprKind::Constructor { name, members, .. } => {
+            out.push(*name);
             out.extend(members.iter().map(|member| member.val));
         }
 
@@ -63,6 +59,7 @@ pub fn expr_children(expr: &HIRExpr, out: &mut Vec<ExprId>) {
         | HIRExprKind::Struct { .. }
         | HIRExprKind::TypeValue(_)
         | HIRExprKind::Block(_)
+        | HIRExprKind::Bind { .. }
         | HIRExprKind::Break
         | HIRExprKind::Continue => {}
     }

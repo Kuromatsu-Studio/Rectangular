@@ -101,7 +101,7 @@ pub enum HIRExprKind {
         members: Vec<HIRParam>,
     },
     Constructor {
-        name: String,
+        name: ExprId,
         members: Vec<ConstructorMember>,
     },
     TypeValue(TypeNodeId),

@@ -239,7 +239,7 @@ impl HIRLowering {
             }
             ASTExprKind::Identifier(ident) => HIRExprKind::Identifier(ident),
             ASTExprKind::StructConstructor { name, members } => {
-                let name = self.get_string(*name)?;
+                let name = self.lower_expr(*name)?;
 
                 let struct_members = members
                     .into_iter()
