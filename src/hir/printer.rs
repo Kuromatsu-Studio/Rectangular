@@ -1,5 +1,5 @@
-use std::fmt::Write;
 use std::fmt;
+use std::fmt::Write;
 
 use crate::hir::{
     expr::{ComptimeKind, HIRExprKind, HIRExprLiteral, HIRParam},
@@ -81,10 +81,7 @@ fn fmt_type(w: &mut dyn fmt::Write, module: &HIRModule, id: TypeNodeId) -> fmt::
             write!(w, "*")?;
             fmt_type(w, module, *inner)
         }
-        HIRTypeKind::Function {
-            params,
-            return_ty,
-        } => {
+        HIRTypeKind::Function { params, return_ty } => {
             write!(w, "fn(")?;
             for (i, p) in params.iter().enumerate() {
                 if i > 0 {
@@ -132,11 +129,7 @@ fn fmt_attr(w: &mut dyn fmt::Write, module: &HIRModule, id: AttrId) -> fmt::Resu
     Ok(())
 }
 
-fn fmt_param(
-    w: &mut dyn fmt::Write,
-    module: &HIRModule,
-    p: &HIRParam,
-) -> fmt::Result {
+fn fmt_param(w: &mut dyn fmt::Write, module: &HIRModule, p: &HIRParam) -> fmt::Result {
     if !p.attributes.is_empty() {
         write!(w, "[")?;
         for (i, a) in p.attributes.iter().enumerate() {
@@ -151,12 +144,7 @@ fn fmt_param(
     fmt_type(w, module, p.ty)
 }
 
-fn fmt_expr(
-    w: &mut dyn fmt::Write,
-    module: &HIRModule,
-    id: ExprId,
-    depth: usize,
-) -> fmt::Result {
+fn fmt_expr(w: &mut dyn fmt::Write, module: &HIRModule, id: ExprId, depth: usize) -> fmt::Result {
     let expr = &module.exprs[id.0];
     let pad = ind(depth);
     match &expr.kind {
@@ -317,11 +305,7 @@ fn fmt_expr(
             writeln!(w)?;
             write!(w, "{}}}", pad)
         }
-        HIRExprKind::Lambda {
-            params,
-            ret,
-            body,
-        } => {
+        HIRExprKind::Lambda { params, ret, body } => {
             write!(w, "{}Lambda @ {} (", pad, expr.span)?;
             for (i, p) in params.iter().enumerate() {
                 if i > 0 {
@@ -396,11 +380,11 @@ fn fmt_expr(
             }
         }
         HIRExprKind::Constructor { name, members } => {
-            writeln!(w, "{}Constructor {} @ {} {{", pad, name, expr.span)?;
-            for (i, m) in members.iter().enumerate() {
-                if i > 0 {
-                    writeln!(w)?;
-                }
+            writeln!(w, "{}Constructor @ {} {{", pad, expr.span)?;
+            write!(w, "{}    Name: ", ind(depth + 1))?;
+            fmt_expr(w, module, *name, depth + 2)?;
+            for m in members.iter() {
+                writeln!(w)?;
                 write!(w, "{}    Member {}: ", ind(depth + 1), m.name)?;
                 fmt_expr(w, module, m.val, depth + 2)?;
             }

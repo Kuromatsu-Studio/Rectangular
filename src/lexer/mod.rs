@@ -1,5 +1,5 @@
-mod lexer;
+mod core;
 mod token;
 
-pub use lexer::Lexer;
+pub use core::Lexer;
 pub use token::{TType, Token};

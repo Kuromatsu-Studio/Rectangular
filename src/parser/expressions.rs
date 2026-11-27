@@ -2,7 +2,7 @@ use crate::{
     ast::{ASTConstructorMember, ASTExpr, ASTExprKind, ASTParam, BinaryOp, Precedence, UnaryOp},
     diagnostics::Span,
     lexer::TType,
-    parser::parser::Parser,
+    parser::core::Parser,
 };
 
 impl Parser {

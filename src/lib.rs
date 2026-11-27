@@ -1,5 +1,6 @@
-pub mod diagnostics;
-pub mod lexer;
 pub mod ast;
-pub mod parser;
+pub mod diagnostics;
 pub mod hir;
+pub mod lexer;
+pub mod parser;
+pub mod resolver;

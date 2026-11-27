@@ -1,5 +1,5 @@
 use rectangular::{
-    ast::pretty_module, diagnostics::Diagnostics, hir::HIRLowering, lexer::Lexer, parser::Parser,
+    diagnostics::Diagnostics, hir::HIRLowering, lexer::Lexer, parser::Parser, resolver::Resolver,
 };
 use std::{cell::RefCell, env, fs, rc::Rc};
 
@@ -47,7 +47,8 @@ fn main() -> Result<(), std::io::Error> {
         diagnostics.borrow().dump();
         std::process::exit(1);
     }
-    println!("{}", pretty_module(&ast));
+    println!("-------AST------");
+    println!("{}", rectangular::ast::pretty_module(&ast));
 
     //HIR
     let mut hir_lowering = HIRLowering::new(ast, Rc::clone(&diagnostics));
@@ -56,7 +57,17 @@ fn main() -> Result<(), std::io::Error> {
         diagnostics.borrow().dump();
         std::process::exit(1);
     }
+    println!("-------HIR------");
     println!("{}", rectangular::hir::pretty_module(&hir));
+
+    //Name resolution
+    let mut resolver = Resolver::new(hir, Rc::clone(&diagnostics));
+    resolver.resolve();
+    if resolver.is_corrupted() {
+        diagnostics.borrow().dump();
+        std::process::exit(1);
+    }
+    println!("{:?}", resolver.refs);
 
     Ok(())
 }
